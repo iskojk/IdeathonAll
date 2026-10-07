@@ -1,0 +1,1329 @@
+/**
+ * MentorNet Module CSS
+ * Mentor sayfaları için ortak stiller
+ */
+
+/* ========================================
+   BACK BUTTONS
+   ======================================== */
+.btn-back-mentor {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #6b7280;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  margin-bottom: 24px;
+  padding: 10px 16px;
+  background: white;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s;
+}
+
+.btn-back-mentor:hover {
+  color: #2563eb;
+  border-color: #2563eb;
+  text-decoration: none;
+}
+
+.btn-back-mentor i {
+  font-size: 16px;
+}
+
+/* Center variant */
+.btn-back-mentor-center {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #6b7280;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  padding: 10px 16px;
+  background: white;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s;
+}
+
+.btn-back-mentor-center:hover {
+  color: #2563eb;
+  border-color: #2563eb;
+  text-decoration: none;
+}
+
+/* ========================================
+   MENTOR CARDS
+   ======================================== */
+.mentor-card-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.mentor-card-link:hover {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* View Profile / Appointment Button in Mentor Card */
+.btn-view-profile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.mentor-card-link:hover .btn-view-profile {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+}
+
+/* Mentor Profile Link Button (Meeting Detail Page) */
+.btn-mentor-profile-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  background: #f3f4f6;
+  color: #374151;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.btn-mentor-profile-link:hover {
+  background: #dbeafe;
+  color: #1d4ed8;
+  text-decoration: none;
+}
+
+.mentor-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.mentor-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+  border-color: #2563eb;
+}
+
+.mentor-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.mentor-avatar-initials {
+  color: white;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.mentor-card-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 4px 0;
+  text-align: center;
+}
+
+.mentor-card-title {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0 0 12px 0;
+  text-align: center;
+}
+
+.mentor-card-bio {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.5;
+  margin: 0 0 16px 0;
+  text-align: center;
+  flex-grow: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.mentor-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.mentor-card-tag {
+  font-size: 11px;
+  padding: 4px 10px;
+  background: #eff6ff;
+  color: #2563eb;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+/* ========================================
+   APPOINTMENT BUTTON
+   ======================================== */
+.btn-appointment {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.btn-appointment:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+  color: white;
+  text-decoration: none;
+}
+
+.btn-appointment i {
+  font-size: 16px;
+}
+
+/* ========================================
+   DETAIL BUTTON
+   ======================================== */
+.btn-detail-mentor {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 20px;
+  background: white;
+  color: #2563eb;
+  font-size: 14px;
+  font-weight: 600;
+  border: 2px solid #2563eb;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.btn-detail-mentor:hover {
+  background: #2563eb;
+  color: white;
+  text-decoration: none;
+}
+
+/* Meeting Detail Link Button */
+.btn-meeting-detail {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 18px;
+  background: #f3f4f6;
+  color: #374151;
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.btn-meeting-detail:hover {
+  background: #e5e7eb;
+  color: #111827;
+  text-decoration: none;
+}
+
+/* ========================================
+   MENTOR DETAIL PAGE
+   ======================================== */
+.mentor-detail-section {
+  background: #f9fafb;
+  min-height: calc(100vh - 140px);
+}
+
+.mentor-detail-header {
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  text-align: center;
+}
+
+.mentor-detail-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.3);
+}
+
+.mentor-detail-avatar-initials {
+  color: white;
+  font-size: 42px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.mentor-detail-name {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 8px 0;
+}
+
+.mentor-detail-title {
+  font-size: 16px;
+  color: #6b7280;
+  margin: 0 0 16px 0;
+}
+
+.mentor-detail-meta {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.mentor-detail-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.mentor-detail-meta-item i {
+  color: #2563eb;
+}
+
+.mentor-detail-bio {
+  font-size: 15px;
+  color: #4b5563;
+  line-height: 1.7;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.mentor-detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.mentor-detail-tag {
+  font-size: 13px;
+  padding: 6px 14px;
+  background: #eff6ff;
+  color: #2563eb;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+/* ========================================
+   AVAILABILITY SECTION
+   ======================================== */
+.availability-section {
+  background: white;
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.availability-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.availability-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.date-filters {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.date-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.date-input-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.date-input-group input {
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1f2937;
+  transition: border-color 0.2s;
+}
+
+.date-input-group input:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.availability-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.slot-card {
+  padding: 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.slot-card:hover {
+  border-color: #2563eb;
+  background: #f8fafc;
+}
+
+.slot-card.selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.slot-card.unavailable {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f3f4f6;
+}
+
+.slot-date {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.slot-time {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.slot-duration {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 4px;
+}
+
+.availability-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6b7280;
+}
+
+.availability-empty i {
+  font-size: 48px;
+  color: #d1d5db;
+  margin-bottom: 16px;
+}
+
+.availability-empty p {
+  font-size: 15px;
+  margin: 0;
+}
+
+/* ========================================
+   BOOKING MODAL
+   ======================================== */
+.booking-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.booking-modal {
+  background: white;
+  border-radius: 20px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease-out;
+}
+
+.booking-modal-header {
+  padding: 24px 24px 0;
+  text-align: center;
+}
+
+.booking-modal-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 8px 0;
+}
+
+.booking-modal-subtitle {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.booking-modal-body {
+  padding: 24px;
+}
+
+.booking-slot-info {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.booking-slot-info-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #4b5563;
+  margin-bottom: 8px;
+}
+
+.booking-slot-info-item:last-child {
+  margin-bottom: 0;
+}
+
+.booking-slot-info-item i {
+  color: #2563eb;
+  width: 20px;
+}
+
+.booking-notes-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.booking-notes-textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 14px;
+  resize: vertical;
+  min-height: 100px;
+  transition: border-color 0.2s;
+}
+
+.booking-notes-textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.booking-modal-footer {
+  padding: 0 24px 24px;
+  display: flex;
+  gap: 12px;
+}
+
+.btn-booking-cancel {
+  flex: 1;
+  padding: 12px 20px;
+  background: white;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 600;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-booking-cancel:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+}
+
+.btn-booking-confirm {
+  flex: 1;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-booking-confirm:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+}
+
+.btn-booking-confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ========================================
+   MEETINGS PAGE
+   ======================================== */
+.meetings-section {
+  background: #f9fafb;
+  min-height: calc(100vh - 140px);
+}
+
+.meetings-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.meetings-tab {
+  padding: 10px 20px;
+  background: white;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.meetings-tab:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.meetings-tab.active {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
+
+.meeting-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 16px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s;
+}
+
+.meeting-card:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.meeting-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.meeting-mentor-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.meeting-mentor-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.meeting-mentor-avatar-initials {
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.meeting-mentor-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 2px 0;
+}
+
+.meeting-mentor-title {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.meeting-status {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.meeting-status.scheduled {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.meeting-status.completed {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.meeting-status.cancelled {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.meeting-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.meeting-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.meeting-detail-item i {
+  color: #2563eb;
+}
+
+.meeting-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-meeting-join {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+
+.btn-meeting-join:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  color: white;
+  text-decoration: none;
+}
+
+.btn-meeting-join:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-meeting-cancel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  background: white;
+  color: #dc2626;
+  font-size: 14px;
+  font-weight: 600;
+  border: 2px solid #dc2626;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-meeting-cancel:hover:not(:disabled) {
+  background: #dc2626;
+  color: white;
+}
+
+.btn-meeting-cancel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-meeting-reschedule {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  background: white;
+  color: #f59e0b;
+  font-size: 14px;
+  font-weight: 600;
+  border: 2px solid #f59e0b;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-meeting-reschedule:hover:not(:disabled) {
+  background: #f59e0b;
+  color: white;
+}
+
+.btn-meeting-feedback {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  background: white;
+  color: #8b5cf6;
+  font-size: 14px;
+  font-weight: 600;
+  border: 2px solid #8b5cf6;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+
+.btn-meeting-feedback:hover {
+  background: #8b5cf6;
+  color: white;
+  text-decoration: none;
+}
+
+/* ========================================
+   MEETING DETAIL PAGE
+   ======================================== */
+.meeting-detail-section {
+  background: #f9fafb;
+  min-height: calc(100vh - 140px);
+}
+
+.meeting-notes-section {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  margin-top: 24px;
+  border: 1px solid #e5e7eb;
+}
+
+.meeting-notes-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.meeting-notes-title i {
+  color: #2563eb;
+}
+
+.meeting-note-item {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border-left: 4px solid #2563eb;
+}
+
+.meeting-note-item:last-child {
+  margin-bottom: 0;
+}
+
+.meeting-note-content {
+  font-size: 14px;
+  color: #4b5563;
+  line-height: 1.6;
+  margin: 0 0 8px 0;
+  white-space: pre-wrap;
+}
+
+.meeting-note-meta {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.meeting-notes-empty {
+  text-align: center;
+  padding: 30px;
+  color: #9ca3af;
+}
+
+.meeting-notes-empty i {
+  font-size: 32px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+/* ========================================
+   FEEDBACK SECTION
+   ======================================== */
+.feedback-section {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  margin-top: 24px;
+  border: 1px solid #e5e7eb;
+}
+
+.feedback-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.feedback-title i {
+  color: #f59e0b;
+}
+
+.feedback-item {
+  background: #fffbeb;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border-left: 4px solid #f59e0b;
+}
+
+.feedback-item:last-child {
+  margin-bottom: 0;
+}
+
+.feedback-rating {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.feedback-star {
+  color: #f59e0b;
+  font-size: 18px;
+}
+
+.feedback-star.empty {
+  color: #d1d5db;
+}
+
+.feedback-comment {
+  font-size: 14px;
+  color: #4b5563;
+  line-height: 1.6;
+  margin: 0 0 8px 0;
+}
+
+.feedback-meta {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.feedback-empty {
+  text-align: center;
+  padding: 30px;
+  color: #9ca3af;
+}
+
+.feedback-empty i {
+  font-size: 32px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+/* ========================================
+   PAGINATION
+   ======================================== */
+.mentor-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 40px;
+}
+
+.pagination-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.pagination-btn.active {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ========================================
+   FILTERS
+   ======================================== */
+.mentor-filters {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  border: 1px solid #e5e7eb;
+}
+
+.mentor-search-input {
+  width: 100%;
+  padding: 12px 16px 12px 44px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 14px center;
+  background-size: 20px;
+}
+
+.mentor-search-input:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.tag-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.tag-filter-btn {
+  padding: 6px 14px;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 500;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tag-filter-btn:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.tag-filter-btn.active {
+  background: #2563eb;
+  color: white;
+}
+
+.show-more-tags-btn {
+  padding: 6px 14px;
+  background: transparent;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px dashed #2563eb;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.show-more-tags-btn:hover {
+  background: #eff6ff;
+}
+
+/* ========================================
+   SKELETON
+   ======================================== */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+}
+
+.skeleton-text {
+  height: 16px;
+  margin-bottom: 8px;
+}
+
+.skeleton-text.short {
+  width: 60%;
+}
+
+.skeleton-text.medium {
+  width: 80%;
+}
+
+.skeleton-button {
+  height: 44px;
+  width: 100%;
+}
+
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ========================================
+   MESSAGING BUTTONS
+   ======================================== */
+.btn-send-message {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  margin-top: 12px;
+}
+
+.btn-send-message:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  color: white;
+  text-decoration: none;
+}
+
+.btn-send-message i {
+  font-size: 16px;
+}
+
+/* Message Badge in Menu */
+.menu-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #dc2626;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.mobile-menu-icon {
+  position: relative;
+}
+
+/* Dropdown Badge */
+.dropdown-badge {
+  background: #dc2626;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-left: auto;
+  min-width: 20px;
+  text-align: center;
+}
+
+.profile-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+@media (max-width: 768px) {
+  .mentor-detail-header {
+    padding: 24px;
+  }
+
+  .mentor-detail-avatar {
+    width: 100px;
+    height: 100px;
+  }
+
+  .mentor-detail-avatar-initials {
+    font-size: 36px;
+  }
+
+  .mentor-detail-name {
+    font-size: 24px;
+  }
+
+  .availability-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .date-filters {
+    width: 100%;
+  }
+
+  .date-input-group {
+    flex: 1;
+  }
+
+  .date-input-group input {
+    width: 100%;
+  }
+
+  .booking-modal-footer {
+    flex-direction: column;
+  }
+
+  .meeting-actions {
+    flex-direction: column;
+  }
+
+  .meeting-actions button,
+  .meeting-actions a {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .btn-send-message {
+    margin-top: 8px;
+  }
+}
+

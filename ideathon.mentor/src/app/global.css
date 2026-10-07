@@ -1,0 +1,18 @@
+html { overflow-y: scroll; }
+
+input, textarea {
+    font-size: 16px !important;
+}
+
+input, select {
+    height: 25px !important;
+}
+
+select {
+    height: 25px !important;
+    min-height: 25px !important;
+}
+
+.mui-sffgti-MuiNativeSelect-root-MuiSelect-select-MuiInputBase-input-MuiOutlinedInput-input {
+    height: 25px !important;
+}

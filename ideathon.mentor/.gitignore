@@ -1,0 +1,86 @@
+# Node.js dependencies
+node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# Build output
+.next/
+out/
+build/
+
+# Static export files
+/static/
+public/assets/generated/
+
+# Temporary files and caches
+.cache/
+*.tmp
+*.temp
+*.cache
+*.pid
+*.seed
+*.pid.lock
+
+# Test coverage
+/coverage/
+*.lcov
+
+# Debugger files
+*.swp
+*.swo
+
+# IDE/editor specific
+.vscode/
+.idea/
+*.iml
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Optional eslint cache
+.eslintcache
+
+# Firebase cache and emulators
+.firebase/
+.firebaserc
+
+# Docker files
+docker-compose.override.yml
+.dockerignore
+
+# Local settings
+.local/
+.settings/
+
+# Custom Frontend-Specific Files
+# Avoid including uploaded images or assets during development
+public/uploads/
+public/temp/
+# Optional if dynamic routes are generated
+pages/**/[slug].js
+pages/**/[id].js
+
+# Avoid generated CSS or static files in development
+public/static/css/
+public/static/js/
+
+# Avoid Next.js Vercel/Deploy-related folders
+.vercel/
+.vscode/*

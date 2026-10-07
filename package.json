@@ -1,0 +1,17 @@
+{
+  "name": "ideathon-local-workspace",
+  "private": true,
+  "scripts": {
+    "setup": "node scripts/local.mjs setup",
+    "dev": "node scripts/local.mjs up",
+    "stop": "node scripts/local.mjs down",
+    "status": "node scripts/local.mjs status",
+    "seed": "node scripts/seed-local.cjs",
+    "verify": "node scripts/verify-local.mjs",
+    "verify:entrepreneurs": "node scripts/verify-entrepreneurs.mjs",
+    "verify:entrepreneur-form": "node scripts/verify-entrepreneur-form.mjs",
+    "verify:entrepreneur-drafts": "node scripts/verify-entrepreneur-form.mjs --admin-drafts",
+    "verify:auth": "node scripts/verify-auth-flow.mjs"
+  },
+  "engines": { "node": ">=20" }
+}

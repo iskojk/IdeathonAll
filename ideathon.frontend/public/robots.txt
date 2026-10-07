@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /
+
+Disallow: /admin/
+Disallow: /config/
+Disallow: /backup/
+Disallow: /.git/
+Disallow: /node_modules/
+Disallow: /_next/
+Disallow: /api/
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /profilim
+Disallow: /basvurularim
+Disallow: /ayarlar/
+Disallow: /mentorluk/
+
+Sitemap: https://ideathon.anahtarfikirler.com/sitemap.xml

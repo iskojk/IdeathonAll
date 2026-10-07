@@ -1,0 +1,54 @@
+[
+  {
+    "project": "ideathon.mentor",
+    "originalArchive": "Ideathon.Mentor-main.zip",
+    "sha256": "1a3e0abbe1c7ae776235561842e9b423f70674e9283b9ab876a7cbe8a014279f",
+    "localArchive": ".local/source-archives/ideathon.mentor.zip",
+    "changedOriginalFilesForLocalSetup": [
+      "ideathon.mentor/package-lock.json",
+      "ideathon.mentor/src/app/(DashboardLayout)/layout.jsx",
+      "ideathon.mentor/src/middleware.js",
+      "ideathon.mentor/src/store/authSlice.js",
+      "ideathon.mentor/src/utils/api/auth.js",
+      "ideathon.mentor/src/utils/axios.js"
+    ]
+  },
+  {
+    "project": "ideathon.api",
+    "originalArchive": "Ideathon.API-main.zip",
+    "sha256": "7199c743236c9b1c971884b7e7d9468a219a66988ba4d0fd760a774cb69c4199",
+    "localArchive": ".local/source-archives/ideathon.api.zip",
+    "changedOriginalFilesForLocalSetup": [
+      "ideathon.api/src/server.js",
+      "ideathon.api/src/services/socketService.js"
+    ]
+  },
+  {
+    "project": "ideathon.frontend",
+    "originalArchive": "Ideathon.Frontend-main.zip",
+    "sha256": "56cdb1999126ec7857394e322befaaba1cf96010ad0781f131b28e483a7c77ae",
+    "localArchive": ".local/source-archives/ideathon.frontend.zip",
+    "changedOriginalFilesForLocalSetup": []
+  },
+  {
+    "project": "ideathon.juri",
+    "originalArchive": "Ideathon.Juri-main.zip",
+    "sha256": "e9cc45c5d50a05ba673f979885f2cdca69b1d77ede97ce354eb318283b0467be",
+    "localArchive": ".local/source-archives/ideathon.juri.zip",
+    "changedOriginalFilesForLocalSetup": [
+      "ideathon.juri/src/middleware.js",
+      "ideathon.juri/src/store/authSlice.js",
+      "ideathon.juri/src/utils/api/auth.js",
+      "ideathon.juri/src/utils/axios.js"
+    ]
+  },
+  {
+    "project": "ideathon.admin",
+    "originalArchive": "Ideathon.Admin-main (1).zip",
+    "sha256": "d44b84357f06fd4f8ab6c2fc1892c52a79dc8dbfa4601349b6eb22e47cec7aef",
+    "localArchive": ".local/source-archives/ideathon.admin.zip",
+    "changedOriginalFilesForLocalSetup": [
+      "ideathon.admin/package-lock.json"
+    ]
+  }
+]

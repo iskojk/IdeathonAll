@@ -1,0 +1,390 @@
+{
+  "id": "entrepreneur-application",
+  "version": 2,
+  "title": "Girişimci Başvuru Formu",
+  "description": "Girişiminizi, ekibinizi ve çözümünüzü tanıyalım.",
+  "isMock": true,
+  "sourceUrl": null,
+  "maxFileSize": 10485760,
+  "acceptedFileTypes": [
+    "application/pdf",
+    "image/png",
+    "image/jpeg"
+  ],
+  "sections": [
+    {
+      "id": "contact",
+      "title": "İletişim Bilgileri",
+      "description": "Sizi ve iletişim bilgilerinizi tanıyalım."
+    },
+    {
+      "id": "venture",
+      "title": "Girişiminiz",
+      "description": "Girişiminizin mevcut durumunu paylaşın."
+    },
+    {
+      "id": "solution",
+      "title": "Problem ve Çözüm",
+      "description": "Çözümünüzü ve yarattığı farkı anlatın."
+    },
+    {
+      "id": "business",
+      "title": "İş Modeli ve Ekip",
+      "description": "Hedeflerinizi ve ihtiyaçlarınızı paylaşın."
+    },
+    {
+      "id": "documents",
+      "title": "Evraklar ve Ek Bilgiler",
+      "description": "Dilerseniz başvurunuzu destekleyen belgeleri ekleyebilirsiniz. Evrak yüklemek zorunlu değildir."
+    }
+  ],
+  "questions": [
+    {
+      "id": "full_name",
+      "section": "contact",
+      "type": "text",
+      "label": "Adınız ve soyadınız",
+      "required": true,
+      "maxLength": 120,
+      "prefill": "name"
+    },
+    {
+      "id": "email",
+      "section": "contact",
+      "type": "text",
+      "inputType": "email",
+      "label": "E-posta adresiniz",
+      "required": true,
+      "maxLength": 254,
+      "prefill": "email"
+    },
+    {
+      "id": "phone",
+      "section": "contact",
+      "type": "text",
+      "inputType": "tel",
+      "label": "Telefon numaranız",
+      "required": true,
+      "maxLength": 30,
+      "prefill": "phone"
+    },
+    {
+      "id": "city",
+      "section": "contact",
+      "type": "singleChoice",
+      "label": "Bulunduğunuz şehir",
+      "required": true,
+      "options": [
+        "Adana",
+        "Adıyaman",
+        "Afyonkarahisar",
+        "Ağrı",
+        "Aksaray",
+        "Amasya",
+        "Ankara",
+        "Antalya",
+        "Ardahan",
+        "Artvin",
+        "Aydın",
+        "Balıkesir",
+        "Bartın",
+        "Batman",
+        "Bayburt",
+        "Bilecik",
+        "Bingöl",
+        "Bitlis",
+        "Bolu",
+        "Burdur",
+        "Bursa",
+        "Çanakkale",
+        "Çankırı",
+        "Çorum",
+        "Denizli",
+        "Diyarbakır",
+        "Düzce",
+        "Edirne",
+        "Elazığ",
+        "Erzincan",
+        "Erzurum",
+        "Eskişehir",
+        "Gaziantep",
+        "Giresun",
+        "Gümüşhane",
+        "Hakkari",
+        "Hatay",
+        "Iğdır",
+        "Isparta",
+        "İstanbul",
+        "İzmir",
+        "Kahramanmaraş",
+        "Karabük",
+        "Karaman",
+        "Kars",
+        "Kastamonu",
+        "Kayseri",
+        "Kırıkkale",
+        "Kırklareli",
+        "Kırşehir",
+        "Kilis",
+        "Kocaeli",
+        "Konya",
+        "Kütahya",
+        "Malatya",
+        "Manisa",
+        "Mardin",
+        "Mersin",
+        "Muğla",
+        "Muş",
+        "Nevşehir",
+        "Niğde",
+        "Ordu",
+        "Osmaniye",
+        "Rize",
+        "Sakarya",
+        "Samsun",
+        "Siirt",
+        "Sinop",
+        "Sivas",
+        "Şanlıurfa",
+        "Şırnak",
+        "Tekirdağ",
+        "Tokat",
+        "Trabzon",
+        "Tunceli",
+        "Uşak",
+        "Van",
+        "Yalova",
+        "Yozgat",
+        "Zonguldak"
+      ],
+      "placeholder": "Şehir seçin",
+      "searchPlaceholder": "Şehir ara...",
+      "help": "Türkiye’nin 81 ili arasından arayarak seçim yapabilirsiniz."
+    },
+    {
+      "id": "linkedin",
+      "section": "contact",
+      "type": "text",
+      "inputType": "url",
+      "label": "LinkedIn profiliniz",
+      "required": false,
+      "maxLength": 500,
+      "placeholder": "https://www.linkedin.com/in/..."
+    },
+    {
+      "id": "venture_name",
+      "section": "venture",
+      "type": "text",
+      "label": "Girişiminizin adı",
+      "required": true,
+      "maxLength": 150
+    },
+    {
+      "id": "venture_summary",
+      "section": "venture",
+      "type": "textarea",
+      "label": "Girişiminizi kısaca anlatın",
+      "required": true,
+      "maxLength": 1500,
+      "help": "Ne yaptığınızı ve kime değer sunduğunuzu özetleyin."
+    },
+    {
+      "id": "founded",
+      "section": "venture",
+      "type": "text",
+      "label": "Girişiminizi ne zaman kurdunuz?",
+      "required": false,
+      "maxLength": 100,
+      "placeholder": "Örn. Ocak 2025 veya henüz kurulmadı"
+    },
+    {
+      "id": "stage",
+      "section": "venture",
+      "type": "singleChoice",
+      "label": "Girişiminiz hangi aşamada?",
+      "required": true,
+      "options": [
+        "Fikir",
+        "Prototip",
+        "MVP / İlk ürün",
+        "İlk müşteriler",
+        "Büyüme"
+      ]
+    },
+    {
+      "id": "company_status",
+      "section": "venture",
+      "type": "singleChoice",
+      "label": "Şirketleşme durumunuz nedir?",
+      "required": true,
+      "options": [
+        "Henüz şirketleşmedik",
+        "Şahıs şirketi",
+        "Limited şirket",
+        "Anonim şirket",
+        "Diğer"
+      ]
+    },
+    {
+      "id": "problem",
+      "section": "solution",
+      "type": "textarea",
+      "label": "Hangi problemi çözüyorsunuz?",
+      "required": true,
+      "maxLength": 2500
+    },
+    {
+      "id": "customers",
+      "section": "solution",
+      "type": "textarea",
+      "label": "Hedef kullanıcılarınız veya müşterileriniz kimler?",
+      "required": true,
+      "maxLength": 1500
+    },
+    {
+      "id": "difference",
+      "section": "solution",
+      "type": "textarea",
+      "label": "Çözümünüzü mevcut alternatiflerden ayıran nedir?",
+      "required": true,
+      "maxLength": 2000
+    },
+    {
+      "id": "focus_areas",
+      "section": "solution",
+      "type": "multipleChoice",
+      "label": "Hangi odak alanlarında çalışıyorsunuz?",
+      "required": true,
+      "help": "Birden fazla seçenek işaretleyebilirsiniz.",
+      "options": [
+        "Akıllı şehirler",
+        "Gayrimenkul teknolojileri",
+        "Enerji ve sürdürülebilirlik",
+        "Yapı ve inşaat teknolojileri",
+        "Afet yönetimi",
+        "Diğer"
+      ]
+    },
+    {
+      "id": "technologies",
+      "section": "solution",
+      "type": "multipleChoice",
+      "label": "Hangi teknolojileri kullanıyorsunuz?",
+      "required": false,
+      "options": [
+        "Yapay zekâ",
+        "Nesnelerin interneti (IoT)",
+        "Veri analitiği",
+        "Robotik",
+        "Mobil / Web uygulamaları",
+        "Diğer"
+      ]
+    },
+    {
+      "id": "revenue",
+      "section": "business",
+      "type": "singleChoice",
+      "label": "Temel gelir modeliniz nedir?",
+      "required": true,
+      "options": [
+        "Abonelik",
+        "Ürün satışı",
+        "Hizmet / Danışmanlık",
+        "Komisyon",
+        "Lisanslama",
+        "Henüz belirlenmedi"
+      ]
+    },
+    {
+      "id": "traction",
+      "section": "business",
+      "type": "textarea",
+      "label": "Bugüne kadar elde ettiğiniz sonuçlar neler?",
+      "required": false,
+      "maxLength": 2000,
+      "help": "Varsa pilot çalışmalarınızı, kullanıcı sayınızı veya iş birliklerinizi paylaşın."
+    },
+    {
+      "id": "team_size",
+      "section": "business",
+      "type": "singleChoice",
+      "label": "Ekibiniz kaç kişiden oluşuyor?",
+      "required": true,
+      "options": [
+        "1 kişi",
+        "2–3 kişi",
+        "4–5 kişi",
+        "6–10 kişi",
+        "10 kişiden fazla"
+      ]
+    },
+    {
+      "id": "support",
+      "section": "business",
+      "type": "multipleChoice",
+      "label": "Hangi alanlarda desteğe ihtiyaç duyuyorsunuz?",
+      "required": true,
+      "options": [
+        "Mentorluk",
+        "Pilot uygulama",
+        "Müşteriye erişim",
+        "Yatırım",
+        "Teknik altyapı",
+        "İş geliştirme"
+      ]
+    },
+    {
+      "id": "goals",
+      "section": "business",
+      "type": "textarea",
+      "label": "Önümüzdeki 12 ay için hedefleriniz neler?",
+      "required": true,
+      "maxLength": 2000
+    },
+    {
+      "id": "website",
+      "section": "documents",
+      "type": "text",
+      "inputType": "url",
+      "label": "Web siteniz veya ürün bağlantınız",
+      "required": false,
+      "maxLength": 500,
+      "placeholder": "https://..."
+    },
+    {
+      "id": "pitch_deck",
+      "section": "documents",
+      "type": "file",
+      "label": "Girişim tanıtım dosyanız",
+      "required": false,
+      "maxFiles": 1,
+      "help": "Dilerseniz girişiminizi anlatan sunumu PDF olarak veya görsel biçiminde ekleyebilirsiniz."
+    },
+    {
+      "id": "company_documents",
+      "section": "documents",
+      "type": "file",
+      "label": "Şirket evrakları",
+      "required": false,
+      "maxFiles": 3,
+      "help": "Varsa başvurunuzu destekleyen şirket belgelerini ekleyin."
+    },
+    {
+      "id": "additional_documents",
+      "section": "documents",
+      "type": "file",
+      "label": "Ek belgeler",
+      "required": false,
+      "maxFiles": 3,
+      "help": "Ürün görselleri, pilot çalışma sonuçları veya diğer destekleyici belgeler."
+    },
+    {
+      "id": "notes",
+      "section": "documents",
+      "type": "textarea",
+      "label": "Eklemek istediğiniz başka bilgiler var mı?",
+      "required": false,
+      "maxLength": 2500
+    }
+  ]
+}

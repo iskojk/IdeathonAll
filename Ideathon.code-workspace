@@ -1,0 +1,13 @@
+{
+  "folders": [
+    { "name": "Workspace", "path": "." },
+    { "name": "API", "path": "ideathon.api" },
+    { "name": "Frontend", "path": "ideathon.frontend" },
+    { "name": "Admin", "path": "ideathon.admin" },
+    { "name": "Jüri", "path": "ideathon.juri" },
+    { "name": "Mentor", "path": "ideathon.mentor" }
+  ],
+  "settings": {
+    "files.watcherExclude": { "**/node_modules/**": true, "**/.next/**": true, "**/.local/**": true }
+  }
+}
