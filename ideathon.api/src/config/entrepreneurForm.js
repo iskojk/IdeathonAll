@@ -4,7 +4,7 @@ const agreements = require('./entrepreneurAgreements');
 const form = buildForm(privacy.text);
 
 module.exports = {
-  ...form, id: 'entrepreneur-application', version: 6, isMock: false, sourceUrl: null, agreements,
+  ...form, id: 'entrepreneur-application', version: 7, isMock: false, sourceUrl: null, agreements,
   description: 'Girişiminizi, ekibinizi ve çözümünüzü tanıyalım.',
   sourceDocument: 'ideathon_başvuru_soru_seti.docx', privacy,
   questions: form.questions.map(question => {

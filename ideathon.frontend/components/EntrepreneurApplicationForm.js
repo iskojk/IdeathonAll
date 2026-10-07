@@ -108,7 +108,8 @@ export default function EntrepreneurApplicationForm() {
   const sections = form?.sections.filter(section => form.questions.some(question => question.section === section.id)) || [];
   const currentSection = sections[step];
   const currentQuestions = form?.questions.filter(question => question.section === currentSection?.id) || [];
-  const completed = form?.questions.filter(question => answered(question, answers, documents)).length || 0;
+  const requiredFields = [...(form?.questions || []), ...(form?.agreements || [])].filter(question => question.required);
+  const completed = requiredFields.filter(question => answered(question, answers, documents)).length;
 
   function changeAnswer(id, value) {
     const next = { ...answersRef.current, [id]: value };
@@ -260,16 +261,18 @@ export default function EntrepreneurApplicationForm() {
       <ApplicationView {...(submitted ? { application, form, user } : {})}>
       <div className={styles.layout}>
         <aside className={styles.sidebar}>
-          <div className={styles.progressHeader}><strong>Başvuru adımları</strong><span>{completed}/{form.questions.length} soru</span></div>
-          <progress value={completed} max={form.questions.length} aria-label="Yanıtlanan soru sayısı" />
+          <div className={styles.progressHeader}><strong>Başvuru adımları</strong><span>{completed}/{requiredFields.length} zorunlu alan</span></div>
+          <progress value={requiredFields.length ? completed : 1} max={requiredFields.length || 1} aria-label="Tamamlanan zorunlu alan sayısı" />
           <nav aria-label="Başvuru bölümleri">
             {sections.map((section, index) => {
               const questions = form.questions.filter(question => question.section === section.id);
-              const count = questions.filter(question => answered(question, answers, documents)).length;
-              const invalid = questions.some(question => errors[question.id]);
+              const fields = index === sections.length - 1 ? [...questions, ...(form.agreements || [])] : questions;
+              const required = fields.filter(question => question.required);
+              const count = required.filter(question => answered(question, answers, documents)).length;
+              const invalid = fields.some(question => errors[question.id]);
               return <button key={section.id} type="button" disabled={!!busy} onClick={() => setStep(index)} className={`${styles.step} ${step === index ? styles.activeStep : ''} ${invalid ? styles.invalidStep : ''}`} aria-current={step === index ? 'step' : undefined}>
-                <span className={styles.stepNumber}>{count === questions.length ? <i className="bi bi-check-lg" /> : index + 1}</span>
-                <span><strong>{section.title}</strong><small>{count}/{questions.length} soru tamamlandı</small></span>
+                <span className={styles.stepNumber}>{required.length > 0 && count === required.length ? <i className="bi bi-check-lg" /> : index + 1}</span>
+                <span><strong>{section.title}</strong><small>{required.length ? `${count}/${required.length} zorunlu alan tamamlandı` : 'İsteğe bağlı alanlar'}</small></span>
               </button>;
             })}
           </nav>

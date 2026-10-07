@@ -34,7 +34,7 @@
 @media (max-width: 575px) { .summaryCard { padding: 20px; } .summaryRow { grid-template-columns: 1fr; gap: 18px; } .summaryField { gap: 4px; } .summaryToggle { justify-content: space-between; } }
 .layout { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 26px; align-items: start; }
 .sidebar { background: white; border: 1px solid #e0e7f1; border-radius: 16px; padding: 22px 16px; position: sticky; top: 24px; }
-.progressHeader { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; padding: 0 4px; }
+.progressHeader { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 10px; font-size: 13px; padding: 0 4px; }
 .progressHeader span { color: #76839a; white-space: nowrap; font-size: 12px; }
 .sidebar progress { display: block; width: 100%; height: 7px; margin: 16px 0 24px; border: none; border-radius: 6px; overflow: hidden; background: #eaf0f8; accent-color: #008acb; }
 .sidebar progress::-webkit-progress-bar { background: #eaf0f8; }

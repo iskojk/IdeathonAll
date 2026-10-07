@@ -19,11 +19,12 @@ export default function EntrepreneurFormTest() {
   useEffect(() => {
     let cancelled = false;
     let server = { _id: 'qa-application', revision: 0, status: 'draft', answers: { venture_name: 'İlk yanıt', phone: '+905321234567' }, documents: [], updatedAt: new Date().toISOString() };
-    const form = { version: 2, title: 'QA', description: '', sections: [{ id: 'contact', title: 'İletişim' }], questions: [
+    const form = { version: 2, title: 'QA', description: '', sections: [{ id: 'contact', title: 'İletişim' }, { id: 'documents', title: 'Dokümanlar' }, { id: 'privacy', title: 'KVKK' }], questions: [
       { id: 'venture_name', section: 'contact', type: 'text', label: 'Girişim', required: true, maxLength: 150 },
       { id: 'phone', section: 'contact', type: 'text', inputType: 'tel', label: 'Telefon', required: true, maxLength: 30 },
       { id: 'company_founded', section: 'contact', type: 'text', inputType: 'date', label: 'Şirketleşme Tarihi', required: false, maxLength: 10 },
-      { id: 'kvkk_ack', section: 'contact', type: 'consent', label: 'KVKK Aydınlatma Metni', required: true, help: 'Test aydınlatma metni', options: ['Okudum ve bilgilendirildim.'] },
+      { id: 'pitch_deck', section: 'documents', type: 'file', label: 'Sunum', required: false, maxFiles: 1 },
+      { id: 'kvkk_ack', section: 'privacy', type: 'consent', label: 'KVKK Aydınlatma Metni', required: true, help: 'Test aydınlatma metni', options: ['Okudum ve bilgilendirildim.'] },
     ], agreements: [
       { id: 'privacy_policy_ack', type: 'consent', required: true, label: 'Gizlilik Politikası', url: 'https://ideathon.anahtarfikirler.com/gizlilik-politikasi' },
       { id: 'terms_ack', type: 'consent', required: true, label: 'Kullanım Şartları', url: 'https://ideathon.anahtarfikirler.com/kullanim-sartlari' },
@@ -63,10 +64,22 @@ export default function EntrepreneurFormTest() {
       setResult('RUNNING: login');
       await login('test@example.com', 'fixture-only');
       await wait(() => field(), 'Form yüklenmedi');
+      const progress = () => document.querySelector('progress');
+      const checkProgress = value => assert(progress().value === value && progress().max === 5, 'İlerleme zorunlu sorular ve üç onaya göre hesaplanmadı');
+      const sectionButton = title => [...document.querySelectorAll('nav[aria-label="Başvuru bölümleri"] button')].find(button => button.textContent.includes(title));
+      checkProgress(2);
+      assert(sectionButton('Dokümanlar').textContent.includes('İsteğe bağlı alanlar'), 'İsteğe bağlı evrak bölümü eksik gösterildi');
+      sectionButton('Dokümanlar').click();
+      await wait(() => document.getElementById('answer-pitch_deck'), 'İsteğe bağlı evrak alanı gösterilmedi');
+      checkProgress(2);
+      sectionButton('İletişim').click();
+      await wait(() => field(), 'İletişim bölümüne dönülemedi');
       const dateInput = document.getElementById('answer-company_founded');
       assert(dateInput.type === 'date', 'Şirketleşme tarihi takvim alanı değil');
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(dateInput, '2024-02-29');
       dateInput.dispatchEvent(new Event('input', { bubbles: true }));
+      await pause(50);
+      checkProgress(2);
       setResult('RUNNING: autosave');
       type('Yanıt A');
       await pause(30);
@@ -119,7 +132,9 @@ export default function EntrepreneurFormTest() {
       offline = false;
       await wait(() => server.answers.venture_name === 'Bağlantı kesilse de korunan yanıt', 'Geri yüklenen yanıt kaydedilmedi');
       setResult('RUNNING: required agreements');
-      const submitButton = () => document.getElementById('question-venture_name').closest('form').querySelector('button[type="submit"]');
+      sectionButton('KVKK').click();
+      await wait(() => document.getElementById('answer-kvkk_ack'), 'KVKK bölümü açılmadı');
+      const submitButton = () => document.getElementById('answer-kvkk_ack').closest('form').querySelector('button[type="submit"]');
       assert(submitButton().disabled, 'KVKK onayı olmadan gönderim açık');
       const kvkk = document.getElementById('answer-kvkk_ack');
       const privacy = document.getElementById('answer-privacy_policy_ack');
@@ -133,14 +148,19 @@ export default function EntrepreneurFormTest() {
       await wait(() => !document.getElementById('answer-kvkk_ack').disabled, 'Onay alanı yüklenmedi');
       kvkk.click();
       await pause(50);
+      checkProgress(3);
       assert(submitButton().disabled, 'Sadece KVKK ile gönderim açık');
       privacy.click();
       await pause(50);
+      checkProgress(4);
       assert(submitButton().disabled, 'Kullanım şartları olmadan gönderim açık');
       terms.click();
       await wait(() => !submitButton().disabled, 'Üç onayla gönderim açılmadı');
+      checkProgress(5);
+      assert(sectionButton('KVKK').textContent.includes('3/3 zorunlu alan tamamlandı'), 'KVKK bölümünde diğer zorunlu onaylar sayılmadı');
       privacy.click();
       await pause(50);
+      checkProgress(4);
       assert(submitButton().disabled, 'Gizlilik onayı kaldırıldığında gönderim açık');
       privacy.click();
       await wait(() => !submitButton().disabled, 'Yeniden onayla gönderim açılmadı');
@@ -150,9 +170,11 @@ export default function EntrepreneurFormTest() {
       assert(server.answers.company_founded === '2024-02-29', 'Seçilen tarih kayıtta korunmadı');
       assert(server.answers.privacy_policy_ack === true && server.answers.terms_ack === true, 'Gizlilik ve kullanım onayları kaydedilmedi');
       assert(server.status === 'submitted', 'Başvuru gönderilmedi');
+      checkProgress(5);
+      assert(!server.documents.length, 'Belgesiz başvuru testi evrak içeriyor');
       assert(!document.querySelector('details').open, 'Özet kapalı değil');
       assert(!sessionStorage.getItem('entrepreneur-draft:qa-draft-user'), 'Gönderimden sonra taslak kaldı');
-      setResult('PASS: date input and saved date, navigation cancellation, autosave, pending-save typing/navigation, revision conflicts, failed-save recovery, browser back, ordered official policy links, three independently required consent checkboxes, submission');
+      setResult('PASS: required-field progress, optional date/documents, consent progress and optional-only sections, date input and saved date, navigation cancellation, autosave, pending-save typing/navigation, revision conflicts, failed-save recovery, browser back, ordered official policy links, three independently required consent checkboxes, document-free submission');
     })().catch(error => { if (!cancelled) setResult(`FAIL: ${error.message}`); });
     return () => {
       cancelled = true;

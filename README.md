@@ -105,6 +105,8 @@ Yeni onaylar açık başvuru taslaklarına ilk erişimde eklenir; mevcut sorular
 
 Şirketleşme Tarihi alanı `inputType: date` kullanır: kullanıcı gün/ay/yıl girebilir veya tarayıcının takviminden seçebilir. İsteğe bağlıdır. Tarih saat dilimi dönüşümü yapılmadan `YYYY-MM-DD` olarak kaydedilir; geçersiz takvim tarihleri API tarafından reddedilir.
 
+İlerleme göstergesi zorunlu sorular ile KVKK, gizlilik ve kullanım onaylarından hesaplanır; isteğe bağlı alanlar ve belgeler boş bırakıldığında eksik görünmez. Yalnızca isteğe bağlı alanlar içeren bölümlerde "İsteğe bağlı alanlar" yazılır. Güncel Word setinde toplam 20 zorunlu alan vardır; soru seti veya zorunluluklar değiştiğinde bu sayı yeniden hesaplanır.
+
 ### Süperadmin: Dinamik soru yönetimi
 
 `http://localhost:3111/entrepreneurs/form` adresindeki **Girişimci Soru Seti** ekranı yalnızca `superadmin` rolüne açıktır. Menüden veya havuzdaki **Soru Setini Düzenle** düğmesinden erişilir. Süperadmin 1–100 soru ekleyebilir/silebilir; bölüm içi sıralamayı, bölümü, soru metnini, açıklamasını, zorunluluğunu, seçeneklerini ve cevap türünü değiştirebilir. Kısa metin, uzun metin, tek seçim, çoklu seçim ve dosya yükleme desteklenir. Kısa metinlerde e-posta, telefon, web adresi, tarih ve sayı formatları seçilebilir. Dosya sınırı soru başına 1–10, dosya başına 10 MB'dır. KVKK onayı son sırada ve zorunlu kalır; aydınlatma metni düzenlenebilir.
