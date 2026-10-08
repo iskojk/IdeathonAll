@@ -6,6 +6,8 @@ const schema = new mongoose.Schema({
   revision: { type: Number, default: 0 },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  deletedAt: { type: Date },
+  deletedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   // Import the pre-library working draft once, including concurrent first visits.
   legacyKey: { type: String },
 }, { timestamps: true });

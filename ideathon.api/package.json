@@ -13,9 +13,15 @@
     "docker:build": "docker build -t emlakapi .",
     "docker:start": "docker run -d --name emlakapi --restart unless-stopped -p 127.0.0.1:5010:5010 --env-file .env.production --log-opt max-size=10m --log-opt max-file=3 emlakapi",
     "docker:stop": "docker stop emlakapi || true && docker rm emlakapi || true",
-    "docker:full": "docker build -t emlakapi . && docker stop emlakapi || true && docker rm emlakapi || true && docker run -d --name emlakapi --restart unless-stopped --network analiz-net -p 127.0.0.1:5010:5010 --env-file .env.production -v $(pwd)/uploads:/usr/src/app/uploads --log-opt max-size=10m --log-opt max-file=3 emlakapi"
+    "docker:full": "docker build -t emlakapi . && docker stop emlakapi || true && docker rm emlakapi || true && docker run -d --name emlakapi --restart unless-stopped --network analiz-net -p 127.0.0.1:5010:5010 --env-file .env.production -v $(pwd)/uploads:/usr/src/app/uploads --log-opt max-size=10m --log-opt max-file=3 emlakapi",
+    "test:registration": "node --test tests/userPhone.test.cjs"
   },
-  "keywords": ["ideathon", "emlak-konut", "hackathon", "api"],
+  "keywords": [
+    "ideathon",
+    "emlak-konut",
+    "hackathon",
+    "api"
+  ],
   "author": "Emlak Konut",
   "license": "UNLICENSED",
   "private": true,

@@ -75,7 +75,7 @@ export default function RootLayout({ children }) {
       {/* Sidebar */}
       {/* ------------------------------------------- */}
 
-      {customizer.isHorizontal ? "" : <Sidebar />}
+      <Sidebar />
 
       {/* ------------------------------------------- */}
       {/* Main Wrapper */}
@@ -93,9 +93,8 @@ export default function RootLayout({ children }) {
         {/* ------------------------------------------- */}
         {/* Header */}
         {/* ------------------------------------------- */}
-        {customizer.isHorizontal ? <HorizontalHeader /> : <Header />}
+        <Header />
         {/* PageContent */}
-        {customizer.isHorizontal ? <Navigation /> : ""}
         <Container
           sx={{
             pt: '30px',

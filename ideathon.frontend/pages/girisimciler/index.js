@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
 import { entrepreneurAPI } from '@/lib/api';
+import EntrepreneurApplicationDownload from '@/components/EntrepreneurApplicationDownload';
+import { entrepreneurStatus } from '@/lib/entrepreneurStatus';
 
 export default function Entrepreneurs() {
   const { user, isAuthenticated, loading } = useAuth();
@@ -11,7 +13,8 @@ export default function Entrepreneurs() {
   const userId = user?._id;
   const currentState = applicationState?.userId === userId ? applicationState : null;
   const checkingApplication = loading || (isAuthenticated && (!currentState || currentState.loading));
-  const submitted = isAuthenticated && ['submitted', 'pending_approval', 'approved'].includes(currentState?.status);
+  const submitted = isAuthenticated && (currentState?.status === 'submitted' || currentState?.isResubmission);
+  const status = entrepreneurStatus(currentState);
   const submittedDate = currentState?.submittedAt ? new Date(currentState.submittedAt) : null;
   const formattedSubmittedDate = submittedDate && !Number.isNaN(submittedDate.getTime())
     ? submittedDate.toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', dateStyle: 'medium', timeStyle: 'short' }) : null;
@@ -21,14 +24,23 @@ export default function Entrepreneurs() {
       setApplicationState(null);
       return;
     }
-    let cancelled = false;
+    const controller = new AbortController();
+    let pending = false;
     setApplicationState({ userId, loading: true });
-    entrepreneurAPI.getMyApplication().then(({ data }) => {
-      if (!cancelled) setApplicationState({ userId, status: data.application?.status || 'draft', ventureName: data.application?.answers?.venture_name, submittedAt: data.application?.submittedAt, loading: false });
-    }).catch(() => {
-      if (!cancelled) setApplicationState({ userId, error: true, loading: false });
-    });
-    return () => { cancelled = true; };
+    const refresh = async () => {
+      if (pending) return;
+      pending = true;
+      try {
+        const { data } = await entrepreneurAPI.getMyApplication(controller.signal);
+        if (!controller.signal.aborted) setApplicationState({ userId, status: data.application?.status || 'draft', reviewStatus: data.application?.reviewStatus, isResubmission: data.application?.isResubmission, ventureName: data.application?.answers?.venture_name, submittedAt: data.application?.submittedAt, loading: false });
+      } catch {
+        if (!controller.signal.aborted) setApplicationState(previous => previous && !previous.loading ? previous : { userId, error: true, loading: false });
+      } finally { pending = false; }
+    };
+    refresh();
+    window.addEventListener('focus', refresh);
+    const timer = setInterval(() => { if (document.visibilityState !== 'hidden') refresh(); }, 15000);
+    return () => { controller.abort(); clearInterval(timer); window.removeEventListener('focus', refresh); };
   }, [loading, isAuthenticated, userId]);
 
   return (
@@ -59,18 +71,20 @@ export default function Entrepreneurs() {
               </div>
               <div className={submitted ? 'entrepreneur-submitted-aside' : 'col-lg-5 offset-lg-1'}>
                 {submitted ? <div className="entrepreneur-card entrepreneur-submitted-card">
-                  <div className="entrepreneur-completed-status" role="status"><span aria-hidden="true"><i className="bi bi-check-lg" /></span>Başvurunuz iletildi</div>
+                  <div className={`entrepreneur-completed-status ${currentState?.reviewStatus === 'rejected' ? 'entrepreneur-rejected' : ''}`} role="status"><span aria-hidden="true"><i className={`bi ${status.icon}`} /></span>Başvurunuz {status.label.toLocaleLowerCase('tr-TR')}</div>
                   <h2>Başvuru dosyanız</h2>
                   <p className="entrepreneur-completed-description">Gönderdiğiniz bilgileri ve belgeleri tek bir yerden inceleyebilirsiniz.</p>
                   {(currentState?.ventureName || formattedSubmittedDate) && <dl className="entrepreneur-file-info">
                     {currentState?.ventureName && <div><dt>Girişim adı</dt><dd>{currentState.ventureName}</dd></div>}
-                    {formattedSubmittedDate && <div><dt>Gönderim tarihi</dt><dd><time dateTime={currentState.submittedAt}>{formattedSubmittedDate}</time></dd></div>}
+                    {formattedSubmittedDate && <div><dt>Başvuru Tarihi</dt><dd><time dateTime={currentState.submittedAt}>{formattedSubmittedDate}</time></dd></div>}
                   </dl>}
-                  <div className="entrepreneur-view entrepreneur-completed-view"><Link href="/girisimciler/basvuru" className="entrepreneur-view-button">Başvurumu Görüntüle <i className="bi bi-arrow-right" aria-hidden="true" /></Link></div>
+                  {currentState?.isResubmission && <p className="entrepreneur-edit-note">Düzenleme taslağınız var. Değişikliklerinizi yeniden göndererek tamamlayın.</p>}
+                  <div className="entrepreneur-view entrepreneur-completed-view"><Link href="/girisimciler/basvuru" className="entrepreneur-view-button">{currentState?.isResubmission ? 'Düzenlemeye Devam Et' : 'Başvurumu Görüntüle'} <i className="bi bi-arrow-right" aria-hidden="true" /></Link></div>
+                  <div className="entrepreneur-download"><EntrepreneurApplicationDownload label="PDF Önizle" /></div>
                 </div> : <div className="entrepreneur-card">
                   <div className="entrepreneur-icon"><i className="bi bi-briefcase" aria-hidden="true" /></div>
                   <h2>Girişimci Başvurusu</h2>
-                  <p>Metin, seçim ve evrak yükleme alanlarıyla başvurunuzu hazırlayın. Taslağınızı kaydedip daha sonra devam edebilirsiniz.</p>
+                  <p>Girişiminiz için bir sonraki adımı atın.</p>
                   {checkingApplication ? <div className="entrepreneur-status entrepreneur-status-loading" role="status">Başvuru durumunuz kontrol ediliyor...</div> : currentState?.error ? <div className="entrepreneur-status entrepreneur-status-loading" role="status">Başvuru durumunuz şu anda alınamadı. Başvurunuzu aşağıdan görüntüleyebilirsiniz.</div> : <Link href={isAuthenticated ? '/girisimciler/basvuru' : '/girisimciler/login'} className="submit-btn-primary w-100">
                     <span>{!loading && isAuthenticated ? 'Başvuruya Devam Et' : 'Giriş Yap ve Başvur'}</span>
                     <i className="bi bi-arrow-right" aria-hidden="true" />
@@ -118,6 +132,9 @@ export default function Entrepreneurs() {
         .entrepreneur-submitted-card { padding: 30px; border-radius: 18px; border-color: #d8e5f2; box-shadow: 0 12px 36px #163c630a; }
         .entrepreneur-completed-status { display: flex; align-items: center; gap: 9px; color: #15764e; font-size: 13px; font-weight: 500; margin-bottom: 22px; }
         .entrepreneur-completed-status > span { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #e6f5ee; font-size: 15px; }
+        .entrepreneur-completed-status.entrepreneur-rejected { color: #a42d36; }
+        .entrepreneur-rejected > span { background: #fff0f1; }
+        .entrepreneur-edit-note { margin: 16px 0 0; font-size: 13px !important; }
         .entrepreneur-submitted-card h2 { font-size: 25px; font-weight: 600; color: #243451; margin-bottom: 10px; }
         .entrepreneur-submitted-card .entrepreneur-completed-description { font-size: 14px; line-height: 1.8; margin-bottom: 0; color: #69778c; }
         .entrepreneur-file-info { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin: 22px 0 0; padding: 18px 20px; border: 1px solid #e5edf6; border-radius: 10px; background: #f7faff; }
@@ -128,6 +145,7 @@ export default function Entrepreneurs() {
         .entrepreneur-completed-view { margin-top: 22px; }
         .entrepreneur-completed-view :global(.entrepreneur-view-button) { width: 60%; padding: 10px 16px; justify-content: center; gap: 10px; border-color: #0079ca; background: #0079ca; color: white; border-radius: 9px; font-size: 13px; font-weight: 500; }
         .entrepreneur-completed-view :global(.entrepreneur-view-button:hover) { background: #0065ae; border-color: #0065ae; color: white; }
+        .entrepreneur-download { display: flex; justify-content: center; margin-top: 10px; }
         @media (max-width: 991px) { .entrepreneur-submitted-layout { max-width: 680px; grid-template-columns: 1fr; gap: 30px; } .entrepreneur-completed-intro h1 { max-width: 580px; } }
         @media (max-width: 767px) { .entrepreneur-section { padding: 45px 0 60px; } .entrepreneur-card { padding: 26px 22px; } }
         @media (max-width: 575px) { .entrepreneur-section-submitted { padding: 36px 0 48px; } .entrepreneur-completed-label { margin-bottom: 18px; } .entrepreneur-completed-intro h1 { font-size: 31px; } .entrepreneur-completed-intro .entrepreneur-intro { font-size: 14px; } .entrepreneur-submitted-card h2 { font-size: 23px; } .entrepreneur-file-info { grid-template-columns: 1fr; padding: 16px; gap: 14px; } .entrepreneur-completed-view :global(.entrepreneur-view-button) { gap: 8px; padding: 10px 13px; font-size: 12px; } }

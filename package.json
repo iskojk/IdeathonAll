@@ -9,9 +9,19 @@
     "seed": "node scripts/seed-local.cjs",
     "verify": "node scripts/verify-local.mjs",
     "verify:entrepreneurs": "node scripts/verify-entrepreneurs.mjs",
+    "verify:entrepreneur-pool": "node scripts/verify-entrepreneur-pool.mjs",
+    "verify:entrepreneur-workflow": "node scripts/verify-entrepreneur-workflow.mjs",
     "verify:entrepreneur-form": "node scripts/verify-entrepreneur-form.mjs",
     "verify:entrepreneur-drafts": "node scripts/verify-entrepreneur-form.mjs --admin-drafts",
-    "verify:auth": "node scripts/verify-auth-flow.mjs"
+    "verify:auth": "node scripts/verify-auth-flow.mjs",
+    "migrate:user-phones": "node scripts/migrate-user-phones.mjs",
+    "verify:registration": "node scripts/verify-registration.mjs",
+    "migrate:entrepreneur-numbers": "node scripts/migrate-entrepreneur-numbers.mjs",
+    "verify:entrepreneur-numbers": "node scripts/verify-entrepreneur-numbers.mjs",
+    "verify:entrepreneur-access": "node scripts/verify-entrepreneur-access.mjs",
+    "verify:entrepreneur-draft-versions": "node scripts/verify-entrepreneur-draft-versions.mjs"
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=20"
+  }
 }

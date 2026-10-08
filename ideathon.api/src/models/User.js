@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const { normalizePhone } = require('../services/entrepreneurPhone');
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -22,8 +23,9 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: false,
     trim: true,
-    maxlength: [15, 'Telefon numarası en fazla 15 karakter olabilir']
+    maxlength: [32, 'Telefon numarası en fazla 32 karakter olabilir']
   },
+  phoneKey: { type: String, select: false },
   password: {
     type: String,
     required: [true, 'Şifre alanı zorunludur'],
@@ -118,7 +120,26 @@ const userSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Email index
+// Missing legacy phone numbers are allowed. Normalized numbers remain unique.
+userSchema.index({ phoneKey: 1 }, { name: 'user_phone_unique', unique: true, partialFilterExpression: { phoneKey: { $type: 'string' } } });
+userSchema.pre('validate', function(next) {
+  if (this.isModified('phone')) {
+    if (!this.phone?.trim()) this.phoneKey = undefined;
+    else {
+      const normalized = normalizePhone(this.phone);
+      if (!normalized) this.invalidate('phone', 'Geçerli bir telefon numarası giriniz.');
+      else this.phoneKey = normalized;
+    }
+  }
+  next();
+});
+
+// Legacy duplicate groups can outlive their indexed representative.
+userSchema.statics.phoneInUse = async function(phoneKey) {
+  if (await this.exists({ phoneKey })) return true;
+  const legacy = await this.find({ phone: { $type: 'string' }, phoneKey: { $exists: false } }).select('phone').lean();
+  return legacy.some(user => normalizePhone(user.phone) === phoneKey);
+};
 
 // Virtual for full name (şimdilik sadece name var ama ileride firstName lastName olabilir)
 userSchema.virtual('displayName').get(function() {

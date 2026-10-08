@@ -59,6 +59,8 @@ try {
   assert.equal(await FormDraft.countDocuments({ legacyKey: 'entrepreneur' }), 1);
   const searchKey = `Havuz-${randomBytes(8).toString('hex')}`;
   await request('/entrepreneurs/my', { expected: 401 });
+  await request('/entrepreneurs/my/export?format=pdf', { expected: 401 });
+  await request('/entrepreneurs/my/export?format=pdf', { token, expected: 404 });
   const initial = await (await request('/entrepreneurs/my', { token })).json();
   const form = initial.data.form;
   assert.equal(form.questions.length, 21);
@@ -68,6 +70,7 @@ try {
   const draft = await (await request('/entrepreneurs/my', { token, method: 'PUT', body: { answers: { venture_name: 'Örnek yerel girişim' }, formVersion: form.version } })).json();
   let application = draft.data.application;
   assert.equal(application.status, 'draft');
+  await request('/entrepreneurs/my/export?format=pdf', { token, expected: 404 });
   const reloaded = await (await request('/entrepreneurs/my', { token })).json();
   assert.equal(reloaded.data.application.answers.venture_name, 'Örnek yerel girişim');
   assert.equal((await (await request('/entrepreneurs/my', { token: otherToken })).json()).data.application, null);
@@ -143,6 +146,18 @@ try {
   assert.equal(final.form.version, form.version);
   console.log('OK: Tüm soru türleriyle başvuru gönderimi, kalıcılık ve gönderim sonrası değişiklik koruması');
 
+  const ownPdf = await request('/entrepreneurs/my/export?format=pdf', { token });
+  assert.equal(ownPdf.headers.get('cache-control'), 'no-store');
+  assert.match(ownPdf.headers.get('content-type'), /application\/pdf/);
+  assert.ok(ownPdf.headers.get('content-disposition').includes(String(application._id)));
+  const ownPdfContents = Buffer.from(await ownPdf.arrayBuffer());
+  assert.equal(ownPdfContents.subarray(0, 5).toString(), '%PDF-');
+  assert.ok(ownPdfContents.length > 1000);
+  await request('/entrepreneurs/my/export?format=pdf', { token: otherToken, expected: 404 });
+  await request('/entrepreneurs/my/export?format=docx', { token, expected: 400 });
+  await request('/entrepreneurs/my/export?format=html', { token, expected: 400 });
+  await request('/entrepreneurs/my/export?format=pdf&format=pdf', { token, expected: 400 });
+
   const detailPath = `/entrepreneurs/admin/${application._id}`;
   const filePath = `${detailPath}/documents/${application.documents[0]._id}`;
   for (const path of ['/entrepreneurs/admin', detailPath, filePath, `${detailPath}/export?format=pdf`, `${detailPath}/export?format=docx`]) {
@@ -198,6 +213,14 @@ try {
   nextForm.questions[0].label = 'Değişen soru başlığı';
   nextForm.questions.push({ id: 'extra_question', section: 'contact', type: 'textarea', label: 'Dinamik ek soru', required: false });
   const second = await Application.create({ userId: userIds[1], form: nextForm, answers: { ...answers, venture_name: `${searchKey} ikinci`, extra_question: 'Soru sayısı dinamik' }, status: 'submitted', submittedAt: new Date(Date.now() + 1000) });
+  const otherOwnPdf = await request(`/entrepreneurs/my/export?format=pdf&applicationId=${application._id}&userId=${userIds[0]}`, { token: otherToken });
+  assert.ok(otherOwnPdf.headers.get('content-disposition').includes(String(second._id)), 'Client-supplied IDs must not select another applicant');
+  assert.ok(!otherOwnPdf.headers.get('content-disposition').includes(String(application._id)));
+  await otherOwnPdf.arrayBuffer();
+  const firstOwnPdf = await request(`/entrepreneurs/my/export?format=pdf&applicationId=${second._id}`, { token });
+  assert.ok(firstOwnPdf.headers.get('content-disposition').includes(String(application._id)));
+  await firstOwnPdf.arrayBuffer();
+  console.log('OK: Girişimci kendi gönderilmiş başvurusunu PDF indirir; taslaklar, oturumsuz erişim, farklı format ve başka hesaba erişim engellenir');
   const secondDetail = (await (await request(`/entrepreneurs/admin/${second._id}`, { token: adminToken })).json()).data;
   assert.equal(secondDetail.form.questions.length, 22);
   assert.equal(secondDetail.answers.extra_question, 'Soru sayısı dinamik');

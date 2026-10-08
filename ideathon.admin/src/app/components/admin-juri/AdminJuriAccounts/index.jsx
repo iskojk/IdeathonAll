@@ -119,45 +119,6 @@ const AdminJuriAccounts = () => {
 
   const isSuperAdmin = user?.role === 'superadmin';
 
-  if (!isAuthenticated || !isSuperAdmin) {
-    return (
-      <Fade in={true} timeout={500}>
-        <Box
-          sx={{
-            p: { xs: 2, sm: 3, md: 4 },
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: '60vh',
-            textAlign: 'center',
-          }}
-        >
-          <IconX size={80} color={theme.palette.error.main} style={{ marginBottom: 24 }} />
-          <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
-            Yetkisiz Erisim
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 400 }}>
-            Bu sayfaya erismek icin Super Admin yetkisine sahip olmaniz gerekir.
-          </Typography>
-          <Button
-            variant="contained"
-            onClick={() => window.history.back()}
-            sx={{
-              borderRadius: 2,
-              px: 4,
-              textTransform: "none",
-              boxShadow: "none",
-              "&:hover": { boxShadow: "none" },
-            }}
-          >
-            Geri Don
-          </Button>
-        </Box>
-      </Fade>
-    );
-  }
-
   const [accounts, setAccounts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRole, setSelectedRole] = useState("all");
@@ -187,13 +148,15 @@ const AdminJuriAccounts = () => {
   const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
+    if (!isAuthenticated || !isSuperAdmin) return;
     fetchDropdownIdeathons();
-  }, [fetchDropdownIdeathons]);
+  }, [isAuthenticated, isSuperAdmin, fetchDropdownIdeathons]);
 
   useEffect(() => {
+    if (!isAuthenticated || !isSuperAdmin) return;
     loadData();
     loadStats();
-  }, [searchTerm, selectedRole, selectedStatus, selectedIdeathonFilter, currentPage, itemsPerPage]);
+  }, [isAuthenticated, isSuperAdmin, searchTerm, selectedRole, selectedStatus, selectedIdeathonFilter, currentPage, itemsPerPage]);
 
   const loadData = async () => {
     const filters = {
@@ -343,6 +306,45 @@ const AdminJuriAccounts = () => {
     { value: "active", label: "Aktif" },
     { value: "inactive", label: "Pasif" },
   ];
+
+  if (!isAuthenticated || !isSuperAdmin) {
+    return (
+      <Fade in={true} timeout={500}>
+        <Box
+          sx={{
+            p: { xs: 2, sm: 3, md: 4 },
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '60vh',
+            textAlign: 'center',
+          }}
+        >
+          <IconX size={80} color={theme.palette.error.main} style={{ marginBottom: 24 }} />
+          <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
+            Yetkisiz Erisim
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 400 }}>
+            Bu sayfaya erismek icin Super Admin yetkisine sahip olmaniz gerekir.
+          </Typography>
+          <Button
+            variant="contained"
+            onClick={() => window.history.back()}
+            sx={{
+              borderRadius: 2,
+              px: 4,
+              textTransform: "none",
+              boxShadow: "none",
+              "&:hover": { boxShadow: "none" },
+            }}
+          >
+            Geri Don
+          </Button>
+        </Box>
+      </Fade>
+    );
+  }
 
   return (
     <Fade in={true} timeout={500}>

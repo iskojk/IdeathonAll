@@ -173,9 +173,11 @@ export default function RegisterPage({ entrepreneur = false }) {
       newErrors.confirmPassword = 'Şifreler eşleşmiyor';
     }
 
-    if (formData.phone.trim()) {
+    if (entrepreneur && !formData.phone.trim()) {
+      newErrors.phone = 'Telefon numarası zorunludur';
+    } else if (formData.phone.trim()) {
       const cleanPhone = formData.phone.replace(/\D/g, '');
-      if (cleanPhone.length !== 11) {
+      if (!/^0[2-5]\d{9}$/.test(cleanPhone)) {
         newErrors.phone = 'Geçerli bir telefon numarası giriniz (örn: 0555 123 45 67)';
       }
     }
@@ -327,7 +329,7 @@ export default function RegisterPage({ entrepreneur = false }) {
                         {/* Telefon */}
                         <div className="mb-25px">
                           <label htmlFor="phone" className="form-label text-dark-gray fw-500 mb-10px fs-15">
-                            Telefon Numarası
+                            Telefon Numarası {entrepreneur && <span className="text-danger">*</span>}
                           </label>
                           <div className="position-relative">
                             <i className="bi bi-phone position-absolute top-50 translate-middle-y ms-15px text-medium-gray fs-18"></i>
@@ -340,6 +342,8 @@ export default function RegisterPage({ entrepreneur = false }) {
                               value={formData.phone}
                               onChange={handlePhoneChange}
                               autoComplete="tel"
+                              required={entrepreneur}
+                              aria-required={entrepreneur}
                             />
                           </div>
                           {errors.phone && <div className="text-danger fs-13 mt-5px">{errors.phone}</div>}

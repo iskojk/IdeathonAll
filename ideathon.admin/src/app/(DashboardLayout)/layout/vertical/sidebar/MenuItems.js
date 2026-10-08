@@ -78,7 +78,7 @@ const Menuitems = [
 
   {
     navlabel: true,
-    subheader: 'DASHBOARD',
+    subheader: 'IDEATHONLAR',
   },
 
   {
@@ -86,30 +86,6 @@ const Menuitems = [
     title: 'Başvurular',
     icon: IconFileDots,
     href: '/applications/list',
-  },
-  {
-    id: uniqueId(),
-    title: 'Girişimciler',
-    icon: IconBuilding,
-    href: '/entrepreneurs',
-    roles: ['admin', 'superadmin'],
-    autoExpand: false,
-    children: [
-      {
-        id: uniqueId(),
-        title: 'Girişimci Havuzu',
-        icon: IconBuilding,
-        href: '/entrepreneurs/list',
-        roles: ['admin', 'superadmin'],
-      },
-      {
-        id: uniqueId(),
-        title: 'Girişimci Soru Seti',
-        icon: IconFileDots,
-        href: '/entrepreneurs/form',
-        roles: ['superadmin'],
-      },
-    ],
   },
   {
     id: uniqueId(),
@@ -139,7 +115,7 @@ const Menuitems = [
 
   {
     navlabel: true,
-    subheader: 'MENTOR',
+    subheader: 'MENTORLAR',
   },
 
   {
@@ -154,6 +130,26 @@ const Menuitems = [
     title: 'Mentor İstatistikleri',
     icon: IconChartHistogram,
     href: '/mentors',
+  },
+
+  {
+    navlabel: true,
+    subheader: 'GİRİŞİMCİLER',
+    roles: ['admin', 'superadmin'],
+  },
+  {
+    id: uniqueId(),
+    title: 'Girişimci Havuzu',
+    icon: IconBuilding,
+    href: '/entrepreneurs/list',
+    roles: ['admin', 'superadmin'],
+  },
+  {
+    id: uniqueId(),
+    title: 'Girişimci Soru Seti',
+    icon: IconFileDots,
+    href: '/entrepreneurs/form',
+    roles: ['superadmin'],
   },
 
   {

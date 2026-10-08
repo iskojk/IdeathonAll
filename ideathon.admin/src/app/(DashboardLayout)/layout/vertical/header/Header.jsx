@@ -1,4 +1,5 @@
 
+import { usePathname } from "next/navigation";
 import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
 import IconButton from "@mui/material/IconButton";
@@ -17,6 +18,8 @@ import Profile from "./Profile";
 import IdeathonSelector from "@/app/components/header/IdeathonSelector";
 
 const Header = () => {
+  const pathname = usePathname();
+  const showIdeathonSelector = !/^\/entrepreneurs(?:\/|$)/.test(pathname || "");
   const lgUp = useMediaQuery((theme) => theme.breakpoints.up("lg"));
   const lgDown = useMediaQuery((theme) => theme.breakpoints.down("lg"));
 
@@ -59,9 +62,9 @@ const Header = () => {
         {/* ------------------------------------------- */}
         {/* İdeathon Seçici (Global Dropdown) */}
         {/* ------------------------------------------- */}
-        <Box sx={{ ml: 2 }}>
+        {showIdeathonSelector && <Box sx={{ ml: 2 }}>
           <IdeathonSelector />
-        </Box>
+        </Box>}
 
         <Box sx={{
           flexGrow: 1

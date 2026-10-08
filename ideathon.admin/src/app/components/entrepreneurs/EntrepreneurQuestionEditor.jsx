@@ -11,9 +11,9 @@ export const answerFormats = {
   url: { label: 'Web adresi', type: 'text', inputType: 'url', help: 'Web sitesi veya bağlantı için.' },
   number: { label: 'Sayı', type: 'text', inputType: 'number', help: 'Ekip büyüklüğü gibi sayısal bir yanıt için.' },
   date: { label: 'Tarih', type: 'text', inputType: 'date', help: 'Kullanıcı takvimden bir tarih seçer.' },
-  singleChoice: { label: 'Tek seçim', type: 'singleChoice', help: 'Kullanıcı seçeneklerden yalnızca birini seçer.' },
-  multipleChoice: { label: 'Çoklu seçim', type: 'multipleChoice', help: 'Kullanıcı birden fazla seçenek işaretleyebilir.' },
-  file: { label: 'Dosya yükleme', type: 'file', help: 'PDF, PNG veya JPEG yüklenebilir. Dosya başına en fazla 10 MB.' },
+  singleChoice: { label: 'Çoktan seçmeli (tek yanıt)', type: 'singleChoice', help: 'Kullanıcı seçeneklerden yalnızca birini seçer.' },
+  multipleChoice: { label: 'Kutucuklar (çoklu seçim)', type: 'multipleChoice', help: 'Kullanıcı birden fazla seçenek işaretleyebilir.' },
+  file: { label: 'Belge yükleme', type: 'file', help: 'PDF, PNG veya JPEG yüklenebilir. Dosya başına en fazla 10 MB.' },
 };
 export const questionFormat = question => question.type === 'text' ? question.inputType || 'text' : question.type;
 
@@ -37,11 +37,11 @@ export default function EntrepreneurQuestionEditor({ question, index, total, exp
   const format = questionFormat(question);
   const config = answerFormats[format];
   const choices = ['singleChoice', 'multipleChoice'].includes(question.type);
-  return <Accordion expanded={expanded} onChange={(_, open) => onExpand(open)} disableGutters sx={{ border: 1, borderColor: expanded ? '#b8d8ee' : 'divider', borderRadius: '10px !important', boxShadow: 'none', overflow: 'hidden', '&:before': { display: 'none' } }}>
-    <AccordionSummary expandIcon={<IconChevronDown size={18} />} sx={{ px: 2, minHeight: 68, '& .MuiAccordionSummary-content': { minWidth: 0, my: 1.5 } }} aria-label={`${question.label || 'Başlıksız soru'} sorusunu düzenle`}>
+  return <Accordion expanded={expanded} onChange={(_, open) => onExpand(open)} disableGutters sx={{ border: 1, borderColor: expanded ? '#a3c9e4' : 'divider', borderLeft: `3px solid ${expanded ? '#3c85bd' : '#c5dbea'}`, borderRadius: '10px !important', boxShadow: expanded ? '0 3px 12px rgba(40,100,145,.07)' : 'none', overflow: 'hidden', transition: 'border-color 160ms ease, box-shadow 160ms ease', '&:before': { display: 'none' } }}>
+    <AccordionSummary expandIcon={<IconChevronDown size={18} />} sx={{ px: 2, minHeight: 68, bgcolor: expanded ? '#f3f8fc' : 'transparent', '&:hover': { bgcolor: '#f6f9fc' }, '& .MuiAccordionSummary-content': { minWidth: 0, my: 1.5 } }} aria-label={`${question.label || 'Başlıksız soru'} sorusunu düzenle`}>
       <Stack direction="row" gap={1.5} alignItems="center" sx={{ width: '100%', minWidth: 0 }}>
-        <Box sx={{ fontSize: 12, color: 'text.secondary', flexShrink: 0 }}>{String(index + 1).padStart(2, '0')}</Box>
-        <Box sx={{ minWidth: 0, flex: 1 }}><Typography sx={{ fontSize: 14, fontWeight: 500, overflowWrap: 'anywhere' }}>{question.label || 'Başlıksız soru'}</Typography><Typography sx={{ fontSize: 12, mt: 0.5 }} color="text.secondary">{config?.label} · {question.required ? 'Zorunlu' : 'İsteğe bağlı'}</Typography></Box>
+        <Box sx={{ display: 'grid', placeItems: 'center', width: 30, height: 30, borderRadius: 1, fontSize: 12, fontWeight: 600, bgcolor: expanded ? '#e1eff9' : '#edf3f8', color: '#3d6b8d', flexShrink: 0 }}>{String(index + 1).padStart(2, '0')}</Box>
+        <Box sx={{ minWidth: 0, flex: 1 }}><Typography sx={{ fontSize: 14, fontWeight: 600, overflowWrap: 'anywhere' }}>{question.label || 'Başlıksız soru'}</Typography><Typography sx={{ fontSize: 12, mt: 0.5 }} color="text.secondary">{config?.label} · {question.required ? 'Zorunlu' : 'İsteğe bağlı'}</Typography></Box>
         {expanded && <Chip label="Düzenleniyor" size="small" variant="outlined" sx={{ display: { xs: 'none', sm: 'flex' }, fontSize: 11, color: '#0065ae', borderColor: '#b8d8ee' }} />}
       </Stack>
     </AccordionSummary>
@@ -55,15 +55,15 @@ export default function EntrepreneurQuestionEditor({ question, index, total, exp
         </Stack>
         {choices && <TextField fullWidth label="Seçenekler" multiline minRows={3} maxRows={8} value={(question.options || []).join('\n')} onChange={e => onChange({ options: e.target.value.split('\n') })} helperText={`Her satıra bir seçenek yazın. ${question.type === 'singleChoice' ? '2–100' : '2–30'} farklı seçenek ekleyebilirsiniz.`} />}
         {question.type === 'file' && <TextField label="En fazla dosya sayısı" type="number" value={question.maxFiles} onChange={e => onChange({ maxFiles: Number(e.target.value) })} inputProps={{ min: 1, max: 10 }} helperText="1–10 dosya" sx={{ maxWidth: 240 }} />}
+        <TextField select label="Sorunun bulunduğu bölüm" value={question.section} onChange={e => onChange({ section: e.target.value })} SelectProps={{ native: true }}>{sections.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}</TextField>
         <Box component="details" sx={{ border: 1, borderColor: 'divider', borderRadius: 1.5, p: 1.5, '& summary': { cursor: 'pointer', fontSize: 13, color: '#526174' } }}>
-          <summary>Ek ayarlar · açıklama, sınırlar ve bölüm</summary>
+          <summary>Ek ayarlar · açıklama ve sınırlar</summary>
           <Stack spacing={2} mt={2}>
             <TextField label="Açıklama / yardım metni" multiline minRows={2} value={question.help || ''} onChange={e => onChange({ help: e.target.value })} inputProps={{ maxLength: 2000 }} helperText="İsteğe bağlı. Kullanıcının soruyu anlamasına yardımcı olur." />
             {['text', 'textarea'].includes(question.type) && <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
               <TextField type="number" label="Karakter sınırı" value={question.maxLength} onChange={e => onChange({ maxLength: Number(e.target.value) })} inputProps={{ min: 1, max: 10000 }} helperText="1–10.000 karakter" />
               <TextField fullWidth label="Örnek yanıt / yer tutucu" value={question.placeholder || ''} onChange={e => onChange({ placeholder: e.target.value })} inputProps={{ maxLength: 500 }} />
             </Stack>}
-            <TextField select label="Sorunun bulunduğu bölüm" value={question.section} onChange={e => onChange({ section: e.target.value })} SelectProps={{ native: true }}>{sections.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}</TextField>
           </Stack>
         </Box>
         <Stack direction="row" gap={1} flexWrap="wrap" alignItems="center" sx={{ pt: 1, borderTop: 1, borderColor: 'divider' }}>

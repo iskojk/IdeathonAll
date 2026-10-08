@@ -2,7 +2,7 @@ import React from "react";
 import Breadcrumb from "@/app/(DashboardLayout)/layout/shared/breadcrumb/Breadcrumb";
 import PageContainer from "@/app/components/container/PageContainer";
 import MentorList from "@/app/components/mentors/Mentor-list/index";
-import { MentorProvider } from "@/app/context/MentorContext/index";
+import { MentorProvider } from "@/app/context/MentorContext";
 import BlankCard from "@/app/components/shared/BlankCard";
 import { CardContent } from "@mui/material";
 

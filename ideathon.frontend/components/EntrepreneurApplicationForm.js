@@ -4,7 +4,10 @@ import { entrepreneurAPI } from '@/lib/api';
 import { readDraft, storeDraft, clearDraft, canRestoreDraft } from '@/lib/entrepreneurDraft';
 import SearchableSelect from '@/components/SearchableSelect';
 import EntrepreneurApplicationSummary from '@/components/EntrepreneurApplicationSummary';
+import EntrepreneurApplicationDetails from '@/components/EntrepreneurApplicationDetails';
+import EntrepreneurPdfPreview from '@/components/EntrepreneurPdfPreview';
 import EntrepreneurAgreementDialog from '@/components/EntrepreneurAgreementDialog';
+import EntrepreneurSubmitDialog from '@/components/EntrepreneurSubmitDialog';
 import styles from '@/styles/entrepreneur.module.css';
 
 function answered(question, answers, documents) {
@@ -32,6 +35,8 @@ export default function EntrepreneurApplicationForm() {
   const [autoSavePaused, setAutoSavePaused] = useState(false);
   const [recoveryDraft, setRecoveryDraft] = useState(null);
   const [selectedAgreement, setSelectedAgreement] = useState(null);
+  const [pdfDocument, setPdfDocument] = useState(null);
+  const [submitConfirm, setSubmitConfirm] = useState(false);
   const answersRef = useRef({});
   const applicationRef = useRef(null);
   const operation = useRef(false);
@@ -116,10 +121,33 @@ export default function EntrepreneurApplicationForm() {
   }, [dirty, busy]);
 
   useEffect(() => {
-    if (!dirty || loading || busy || autoSavePaused || recoveryDraft || !form || (application && application.status !== 'draft')) return;
+    if (!dirty || loading || busy || submitConfirm || autoSavePaused || recoveryDraft || !form || (application && application.status !== 'draft')) return;
     const timer = setTimeout(() => save(false, true), 1500);
     return () => clearTimeout(timer);
-  }, [answers, dirty, loading, busy, autoSavePaused, recoveryDraft, form, application]);
+  }, [answers, dirty, loading, busy, submitConfirm, autoSavePaused, recoveryDraft, form, application]);
+
+  // Refresh a submitted application's status without disturbing an editing draft.
+  useEffect(() => {
+    if (application?.status !== 'submitted') return;
+    const controller = new AbortController();
+    let pending = false;
+    const refreshStatus = async () => {
+      if (document.visibilityState === 'hidden' || operation.current || pending) return;
+      const snapshot = applicationRef.current;
+      pending = true;
+      try {
+        const { data } = await entrepreneurAPI.getMyApplication(controller.signal);
+        if (!controller.signal.aborted && !operation.current && applicationRef.current === snapshot && data.application) {
+          applicationRef.current = data.application; setApplication(data.application); setForm(data.form);
+          answersRef.current = data.application.answers; setAnswers(data.application.answers);
+        }
+      } catch { /* The existing submission remains visible during a connection problem. */ }
+      finally { pending = false; }
+    };
+    window.addEventListener('focus', refreshStatus);
+    const timer = setInterval(refreshStatus, 15000);
+    return () => { controller.abort(); clearInterval(timer); window.removeEventListener('focus', refreshStatus); };
+  }, [application?.status, user?._id]);
 
   const documents = application?.documents || [];
   const consentMissing = [...(form?.questions || []), ...(form?.agreements || [])].some(question => question.type === 'consent' && question.required && answers[question.id] !== true);
@@ -156,6 +184,22 @@ export default function EntrepreneurApplicationForm() {
     }
   }
 
+  async function editApplication(cancel = false) {
+    if (operation.current) return;
+    if (cancel && !window.confirm('Düzenlemeyi iptal edip son gönderdiğiniz başvuruya dönmek istiyor musunuz?')) return;
+    operation.current = true; setBusy('edit'); setError('');
+    try {
+      const { data } = await (cancel ? entrepreneurAPI.cancelEdit(applicationRef.current.revision) : entrepreneurAPI.beginEdit(applicationRef.current.revision));
+      if (!mounted.current) return;
+      applicationRef.current = data.application; setApplication(data.application);
+      answersRef.current = data.application.answers; setAnswers(data.application.answers);
+      if (data.form) setForm(data.form);
+      clearDraft(user?._id); setDirty(false); setRecoveryDraft(null); setAutoSavePaused(false); setErrors({}); setStep(0);
+      setNotice(cancel ? '' : 'Başvurunuzu düzenleyebilirsiniz. Değişiklikleriniz yeniden gönderdiğinizde değerlendirmeye alınır.');
+    } catch (err) { if (mounted.current) handleError(err); }
+    finally { operation.current = false; if (mounted.current) setBusy(''); }
+  }
+
   async function persist(submit = false) {
     const snapshot = answersRef.current;
     const response = await entrepreneurAPI.saveApplication({ answers: snapshot, submit, revision: applicationRef.current?.revision, formVersion: form.version });
@@ -187,7 +231,7 @@ export default function EntrepreneurApplicationForm() {
       await persist(submit);
       if (!mounted.current) return;
       setNotice(submit ? 'Başvurunuz girişimci havuzuna iletildi.' : automatic ? '' : 'Taslağınız kaydedildi. Daha sonra buradan devam edebilirsiniz.');
-      if (submit) window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (submit) { setSubmitConfirm(false); setStep(0); window.scrollTo({ top: 0, behavior: 'smooth' }); }
     } catch (err) {
       if (!mounted.current) return;
       setAutoSavePaused(true);
@@ -195,7 +239,10 @@ export default function EntrepreneurApplicationForm() {
         if (err.errors) setErrors(err.errors);
         setError(`Otomatik kayıt tamamlanamadı. ${err.message || 'Bağlantınızı kontrol edip Taslağı Kaydet ile tekrar deneyin.'}`);
       }
-      else handleError(err);
+      else {
+        if (err.errors) setSubmitConfirm(false);
+        handleError(err);
+      }
     }
     finally { operation.current = false; if (mounted.current) setBusy(''); }
   }
@@ -239,6 +286,7 @@ export default function EntrepreneurApplicationForm() {
   }
 
   async function download(document) {
+    if (document.mimeType === 'application/pdf') { setPdfDocument(document); return; }
     setError('');
     try {
       const blob = await entrepreneurAPI.downloadDocument(document._id);
@@ -259,13 +307,13 @@ export default function EntrepreneurApplicationForm() {
       <header className={styles.heading}>
         <div>
           <span className={styles.eyebrow}>GİRİŞİMCİLER {form.isMock && <span>Örnek soru seti</span>}</span>
-          <h1>{submitted ? 'Girişimci Başvurum' : form.title}</h1>
+          <h1>{submitted ? 'Girişimci Başvurum' : application?.isResubmission ? 'Başvurumu Düzenle' : form.title}</h1>
           <p>{submitted ? 'Başvurunuzun durumunu buradan takip edebilir, gönderdiğiniz yanıtları inceleyebilirsiniz.' : `${form.description} Taslağınızı kaydedip daha sonra devam edebilirsiniz.`}</p>
         </div>
-        <div className={styles.account}><i className="bi bi-person-circle" aria-hidden="true" /><div><strong>{user?.name}</strong><span>{user?.email}</span></div></div>
       </header>
 
       {form.isMock && !submitted && <div className={styles.demoNotice}>Bu form örnek sorular içerir. Gerçek başvuru soru seti hazır olduğunda güncellenecektir.</div>}
+      {application?.isResubmission && <div className={styles.demoNotice}>Değişikliklerinizi herhangi bir bölümden Güncelle ve Gönder ile iletebilirsiniz. Gönderene kadar son başvurunuz değerlendirmede kalır.</div>}
       {error && <div className={styles.error} role="alert">{error}</div>}
       {notice && <div className={submitted ? 'visually-hidden' : styles.success} role="status">{notice}</div>}
       {recoveryDraft && <div className={styles.error} role="alert">
@@ -279,8 +327,8 @@ export default function EntrepreneurApplicationForm() {
       </div>}
 
       {!!application?.previousVersions?.length && <details className={styles.previousAnswers}><summary>Önceki örnek formdaki yanıtlarınız korundu</summary><p>Sorular Word belgesine göre güncellendi. Aktarılan yanıtları kontrol edin; önceki yanıtlarınıza aşağıdan erişebilirsiniz.</p>{application.previousVersions.map((snapshot, index) => <div key={index}>{snapshot.form.questions.filter(q => q.type !== 'file' && snapshot.answers?.[q.id] !== undefined).map(q => <div key={q.id}><strong>{q.label}</strong><p>{Array.isArray(snapshot.answers[q.id]) ? snapshot.answers[q.id].join(', ') : String(snapshot.answers[q.id])}</p></div>)}</div>)}</details>}
-      <ApplicationView {...(submitted ? { application, form, user } : {})}>
-      <div className={styles.layout}>
+      <ApplicationView {...(submitted ? { application, form, user, onEdit: () => editApplication(), busy: !!busy } : {})}>
+      {submitted ? <EntrepreneurApplicationDetails form={form} answers={answers} documents={documents} onDownload={download} onReadAgreement={setSelectedAgreement} busy={!!busy} /> : <div className={styles.layout}>
         <aside className={styles.sidebar}>
           <div className={styles.progressHeader}><strong>Başvuru adımları</strong><span>{completed}/{requiredFields.length} zorunlu alan</span></div>
           <progress value={requiredFields.length ? completed : 1} max={requiredFields.length || 1} aria-label="Tamamlanan zorunlu alan sayısı" />
@@ -300,7 +348,7 @@ export default function EntrepreneurApplicationForm() {
           <div className={styles.savedStatus} role="status">{busy ? 'İşlem sürüyor...' : submitted ? 'Başvuru gönderildi' : dirty ? 'Kaydedilmemiş değişiklikler var' : application ? `Son kayıt: ${new Date(application.updatedAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}` : 'Henüz taslak kaydedilmedi'}</div>
         </aside>
 
-        <form ref={formCardRef} className={styles.formCard} noValidate onSubmit={event => { event.preventDefault(); if (!submitted) save(true); }}>
+        <form ref={formCardRef} className={styles.formCard} noValidate onSubmit={event => { event.preventDefault(); if (!submitted && step === sections.length - 1 && !busy && !recoveryDraft) { if (application?.isResubmission) { setError(''); setSubmitConfirm(true); } else save(true); } }}>
           <div className={styles.sectionHeading}><span>BÖLÜM {step + 1} / {sections.length}</span><h2 ref={sectionHeadingRef} tabIndex={-1}>{currentSection?.title}</h2><p>{currentSection?.description} {currentQuestions.some(question => question.required) && <span>* Zorunlu alan</span>}</p></div>
           {currentQuestions.map(question => {
             const questionDocuments = documents.filter(document => document.questionId === question.id);
@@ -342,7 +390,7 @@ export default function EntrepreneurApplicationForm() {
                 {questionDocuments.map(document => <div key={document._id} className={styles.document}>
                   <i className="bi bi-file-earmark-check" aria-hidden="true" />
                   <div><strong>{document.name}</strong><small>{(document.size / 1024).toFixed(0)} KB · Yüklendi</small></div>
-                  <button type="button" onClick={() => download(document)} disabled={!!busy} aria-label={`${document.name} dosyasını indir`}><i className="bi bi-download" /></button>
+                  <button type="button" onClick={() => download(document)} disabled={!!busy} aria-label={`${document.name} dosyasını ${document.mimeType === 'application/pdf' ? 'önizle' : 'indir'}`}><i className="bi bi-download" /></button>
                   {!submitted && <button type="button" onClick={() => remove(document)} disabled={!!busy || !!recoveryDraft} aria-label={`${document.name} dosyasını kaldır`}><i className="bi bi-trash" /></button>}
                 </div>)}
                 {submitted && !questionDocuments.length && <p>Evrak eklenmedi.</p>}
@@ -362,13 +410,20 @@ export default function EntrepreneurApplicationForm() {
           </div>}
           <div className={styles.actions}>
             <button type="button" className={styles.secondaryButton} disabled={step === 0 || !!busy} onClick={() => goToStep(step - 1)}><i className="bi bi-arrow-left" /> Geri</button>
-            {!submitted && <button type="button" className={styles.saveButton} disabled={!!busy || !!recoveryDraft} onClick={() => save(false)}>{busy === 'save' ? 'Kaydediliyor...' : 'Taslağı Kaydet'}</button>}
-            {step < sections.length - 1 ? <button type="button" className={styles.primaryButton} disabled={!!busy} onClick={() => goToStep(step + 1)}>Devam Et <i className="bi bi-arrow-right" /></button> : !submitted && <button type="submit" className={styles.primaryButton} disabled={!!busy || !!recoveryDraft || consentMissing}>{busy === 'submit' ? 'Gönderiliyor...' : 'Başvuruyu Gönder'} <i className="bi bi-send" /></button>}
+            {!submitted && (!application?.isResubmission || step < sections.length - 1) && <button type="button" className={styles.saveButton} disabled={!!busy || !!recoveryDraft} onClick={() => save(false)}>{busy === 'save' ? 'Kaydediliyor...' : 'Taslağı Kaydet'}</button>}
+            {!submitted && application?.isResubmission && step === sections.length - 1 && <button type="button" className={styles.secondaryButton} disabled={!!busy || !!recoveryDraft} onClick={() => editApplication(true)}>İptal Et</button>}
+            <div className={styles.advanceActions}>
+              {step < sections.length - 1 && <button type="button" className={application?.isResubmission ? styles.saveButton : styles.primaryButton} disabled={!!busy} onClick={() => goToStep(step + 1)}>Devam Et <i className="bi bi-arrow-right" /></button>}
+              {application?.isResubmission ? <button type="button" className={styles.primaryButton} disabled={!!busy || !!recoveryDraft} aria-haspopup="dialog" onClick={() => { setError(''); setSubmitConfirm(true); }}>Güncelle ve Gönder <i className="bi bi-send" /></button>
+                : step === sections.length - 1 && <button type="submit" className={styles.primaryButton} disabled={!!busy || !!recoveryDraft || consentMissing}>{busy === 'submit' ? 'Gönderiliyor...' : 'Başvuruyu Gönder'} <i className="bi bi-send" /></button>}
+            </div>
           </div>
         </form>
-      </div>
+      </div>}
       </ApplicationView>
+      {pdfDocument && <EntrepreneurPdfPreview key={pdfDocument._id} title={pdfDocument.name} filename={pdfDocument.name} load={signal => entrepreneurAPI.downloadDocument(pdfDocument._id, signal)} onClose={() => setPdfDocument(null)} />}
       {selectedAgreement && <EntrepreneurAgreementDialog key={selectedAgreement.id} agreement={selectedAgreement} onClose={() => setSelectedAgreement(null)} />}
+      {submitConfirm && <EntrepreneurSubmitDialog busy={!!busy} error={error} onContinue={() => setSubmitConfirm(false)} onSubmit={() => save(true)} />}
     </div>
   );
 }

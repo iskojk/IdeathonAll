@@ -86,7 +86,9 @@ async function requestBase(baseUrl, endpoint, options = {}) {
 const request = (endpoint, options = {}) => requestBase(API_BASE_URL, endpoint, options);
 
 export const entrepreneurAPI = {
-  getMyApplication: () => request('/entrepreneurs/my'),
+  getMyApplication: (signal) => request('/entrepreneurs/my', { signal }),
+  beginEdit: (revision) => request('/entrepreneurs/my/edit', { method: 'POST', body: JSON.stringify({ revision }) }),
+  cancelEdit: (revision) => request('/entrepreneurs/my/cancel-edit', { method: 'POST', body: JSON.stringify({ revision }) }),
   saveApplication: (payload) => request('/entrepreneurs/my', { method: 'PUT', body: JSON.stringify(payload) }),
   uploadDocument: (questionId, file, revision) => {
     const data = new FormData();
@@ -95,7 +97,8 @@ export const entrepreneurAPI = {
     return request(`/entrepreneurs/documents/${encodeURIComponent(questionId)}`, { method: 'POST', body: data });
   },
   removeDocument: (id, revision) => request(`/entrepreneurs/documents/${id}`, { method: 'DELETE', body: JSON.stringify({ revision }) }),
-  downloadDocument: (id) => request(`/entrepreneurs/documents/${id}`, { responseType: 'blob' }),
+  downloadDocument: (id, signal) => request(`/entrepreneurs/documents/${id}`, { responseType: 'blob', signal }),
+  downloadApplication: (signal) => request('/entrepreneurs/my/export?format=pdf', { responseType: 'blob', signal }),
 };
 const requestMentorNet = (endpoint, options = {}) => requestBase(MENTORNET_API_BASE_URL, endpoint, options);
 const requestUserTeams = (endpoint, options = {}) =>
@@ -156,6 +159,7 @@ export const authAPI = {
         email,
         password,
         phone,
+        entrepreneur,
         createdBy: null
       }),
     });

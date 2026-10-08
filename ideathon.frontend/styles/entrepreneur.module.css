@@ -1,37 +1,74 @@
 .workspace { max-width: 1260px; margin: 0 auto; padding: 44px 24px 80px; color: #243451; }
 .heading { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 24px; position: static; width: auto; }
 .heading h1 { font-size: clamp(27px, 3vw, 38px); line-height: 1.25; font-weight: 700; color: #042070; margin: 14px 0; }
-.heading p { color: #59677e; font-size: 15px; margin: 0; }
+.heading p { color: #59677e; font-size: 15px; line-height: 1.65; margin: 0; max-width: 680px; }
 .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 1px; color: #087ab9; }
 .eyebrow span { margin-left: 10px; padding: 5px 10px; border-radius: 20px; background: #e7eefb; color: #435c84; font-size: 11px; letter-spacing: 0; text-transform: none; }
-.account { display: flex; align-items: center; gap: 12px; flex-shrink: 0; padding: 14px 18px; background: white; border: 1px solid #e0e7f1; border-radius: 12px; }
-.account > i { font-size: 28px; color: #168bc8; }
-.account strong, .account span { display: block; font-size: 13px; line-height: 1.6; }
-.account span { color: #6a768b; overflow-wrap: anywhere; }
 .demoNotice { padding: 12px 18px; background: #eaf3ff; color: #365476; border-radius: 10px; font-size: 13px; margin-bottom: 24px; }
-.applicationSummary { margin-top: 30px; }
-.summaryCard { display: block; list-style: none; padding: 20px 24px; border: 1px solid #d8e5f2; border-radius: 16px; background: white; cursor: pointer; box-shadow: 0 4px 16px #163c6308; }
-.summaryCard::-webkit-details-marker { display: none; }
-.summaryCard:hover { border-color: #8bbde0; }
-.summaryCard:focus-visible { outline: 3px solid #78bee9; outline-offset: 3px; }
-.summaryRow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1.3fr) auto auto; align-items: center; gap: 20px; }
+.applicationSummary { margin: 0; padding: 0; background: white; border: 1px solid #d8e5f2; border-radius: 16px; box-shadow: 0 4px 16px #163c6308; }
+.summaryActions { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 24px; border-bottom: 1px solid #e8eef5; background: #fbfdff; border-radius: 16px 16px 0 0; }
+.summaryTitle { display: flex; align-items: center; gap: 9px; margin: 0; color: #243451; font-size: 15px; font-weight: 600; line-height: 1.5; }
+.summaryNumber { margin: 5px 0 0; font-size: 12px; line-height: 1.5; color: #69778c; }
+.summaryTitle i { color: #168bc8; font-size: 18px; }
+.applicationDownload { max-width: 100%; }
+.downloadApplicationButton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; max-width: 100%; padding: 8px 12px; border: 1px solid #c9deef; border-radius: 8px; background: #f6faff; color: #0065ae; font-size: 12px; font-weight: 500; line-height: 1.6; }
+.downloadApplicationButton:hover:not(:disabled) { background: #eaf3fc; border-color: #8bbde0; }
+.downloadApplicationButton:focus-visible { outline: 3px solid #78bee9; outline-offset: 3px; }
+.downloadApplicationButton:disabled { opacity: 0.65; cursor: wait; }
+.downloadApplicationError { font-size: 12px; line-height: 1.6; color: #a83232; margin: 8px 0 0; }
+.summaryCard { display: block; padding: 22px 24px; border: 0; border-radius: 0 0 16px 16px; background: white; }
+.summaryRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 24px; }
+.summaryInfo { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr) minmax(0, 1.25fr); align-items: start; gap: 16px; max-width: 620px; }
+.summaryRowActions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
 .summaryField { display: flex; flex-direction: column; gap: 6px; min-width: 0; overflow-wrap: anywhere; line-height: 1.5; }
 .summaryField > span:first-child { font-size: 12px; color: #69778c; font-weight: 400; letter-spacing: 0.15px; }
 .summaryField > :last-child { font-size: 15px; font-weight: 500; color: #243451; letter-spacing: 0; }
 .summaryField time { font-variant-numeric: tabular-nums; }
 .statusBadge { display: inline-flex; align-items: center; justify-content: center; gap: 7px; justify-self: start; padding: 8px 12px; border: 1px solid; border-radius: 20px; font-size: 12px; font-weight: 500; line-height: 1.5; white-space: nowrap; }
 .statusSubmitted { color: #00689f; background: #edf7ff; border-color: #c9e4f6; }
+.statusRejected { color: #a42d36; background: #fff0f1; border-color: #f1cbd0; }
+.summaryButtons { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 10px; }
+.summaryButtons > button { padding: 9px 14px; border-radius: 9px; font-size: 13px; display: inline-flex; align-items: center; gap: 8px; }
 .statusPending { color: #885600; background: #fff7e5; border-color: #f1dba4; }
 .statusApproved { color: #15764e; background: #eaf8f3; border-color: #b6e3d1; }
 .statusUnknown { color: #59677e; background: #f0f3f8; border-color: #dce3ed; }
-.summaryToggle { display: flex; align-items: center; justify-content: flex-end; gap: 8px; font-size: 12px; font-weight: 500; line-height: 1.5; color: #0079b7; }
-.hideDetails { display: none; }
-.applicationSummary[open] .showDetails { display: none; }
-.applicationSummary[open] .hideDetails { display: inline; }
-.applicationSummary[open] .summaryToggle i { transform: rotate(180deg); }
-.applicationDetails { padding-top: 24px; }
-@media (max-width: 991px) { .summaryRow { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 20px; } .summaryToggle { grid-column: 1 / -1; padding-top: 10px; border-top: 1px solid #edf1f7; } }
-@media (max-width: 575px) { .summaryCard { padding: 18px; } .summaryRow { grid-template-columns: 1fr; gap: 14px; } .summaryField { gap: 4px; } .summaryToggle { justify-content: space-between; } }
+.summaryToggle, .summaryEdit { display: inline-flex; align-items: center; justify-content: center; justify-self: end; width: fit-content; gap: 8px; padding: 9px 12px; border: 1px solid #c9deef; border-radius: 8px; background: #f6faff; white-space: nowrap; font-size: 12px; font-weight: 500; line-height: 1.5; color: #0079b7; cursor: pointer; }
+.summaryToggle:hover, .summaryEdit:hover:not(:disabled) { background: #eaf3fc; border-color: #8bbde0; }
+.summaryEdit { background: white; color: #435570; border-color: #d8e2ee; }
+.summaryEdit:disabled { opacity: 0.65; cursor: wait; }
+.summaryToggle:focus-visible, .summaryEdit:focus-visible { outline: 3px solid #78bee9; outline-offset: 2px; }
+.summaryDisclosure[data-open="true"] .summaryToggle i { transform: rotate(180deg); }
+.summaryDisclosure[data-open="true"] .summaryCard { border-radius: 0; }
+.applicationDetails { padding: 24px; border-top: 1px solid #e8eef5; border-radius: 0 0 16px 16px; background: #f8fafd; }
+.applicationDetails[hidden] { display: none; }
+.submittedSections { display: flex; flex-direction: column; gap: 12px; }
+.submittedSection { border: 1px solid #dce6f0; border-radius: 12px; background: white; overflow: hidden; }
+.submittedSection > summary, .submittedQuestion > summary { display: flex; align-items: center; gap: 12px; cursor: pointer; list-style: none; }
+.submittedSection > summary { padding: 16px 20px; background: #fbfdff; }
+.submittedSection > summary::-webkit-details-marker, .submittedQuestion > summary::-webkit-details-marker { display: none; }
+.submittedSection > summary:hover, .submittedQuestion > summary:hover { background: #f2f8fd; }
+.submittedSection > summary:focus-visible, .submittedQuestion > summary:focus-visible { outline: 3px solid #78bee9; outline-offset: -3px; }
+.submittedSectionNumber { display: grid; place-items: center; flex-shrink: 0; width: 30px; height: 30px; border-radius: 8px; color: #0079b7; background: #eaf4fc; font-size: 13px; font-weight: 600; }
+.submittedSection h2, .submittedQuestion h3 { flex: 1; min-width: 0; margin: 0; line-height: 1.6; overflow-wrap: anywhere; color: #243451; }
+.submittedSection h2 { font-size: 16px; font-weight: 600; }
+.submittedSectionChevron, .submittedQuestionChevron { flex-shrink: 0; color: #69778c; font-size: 13px; transition: transform .2s; }
+.submittedSection[open] > summary { border-bottom: 1px solid #e8eef5; }
+.submittedSection[open] > summary .submittedSectionChevron, .submittedQuestion[open] > summary .submittedQuestionChevron { transform: rotate(180deg); }
+.submittedSectionBody { padding: 0 20px; }
+.submittedQuestion { border-bottom: 1px solid #e8eef5; }
+.submittedQuestion:last-child { border-bottom: 0; }
+.submittedQuestion > summary { padding: 16px 0; }
+.submittedQuestionNumber { min-width: 22px; flex-shrink: 0; color: #8192ab; font-size: 11px; }
+.submittedQuestion h3 { font-size: 14px; font-weight: 500; }
+.submittedQuestionBody { padding: 0 0 18px 34px; }
+.submittedAnswer, .submittedEmpty, .submittedHelp { margin: 0; font-size: 14px; line-height: 1.8; overflow-wrap: anywhere; white-space: pre-wrap; }
+.submittedEmpty, .submittedHelp { color: #69778c; font-size: 13px; }
+.submittedHelp { padding: 12px 0; }
+.submittedChoices { display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 0; list-style: none; }
+.submittedChoices li { border: 1px solid #dce6f0; border-radius: 7px; padding: 5px 10px; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+@media (max-width: 575px) { .submittedSection > summary { padding: 14px; gap: 10px; } .submittedSectionBody { padding: 0 14px; } .submittedQuestionBody { padding-left: 0; } }
+@media (max-width: 1199px) { .summaryRow { grid-template-columns: 1fr; gap: 20px; } .summaryInfo { max-width: 760px; } .summaryRowActions { justify-content: flex-start; } .summaryRowActions .statusBadge { margin-left: auto; } }
+@media (max-width: 575px) { .summaryActions { flex-wrap: wrap; gap: 12px; padding: 16px 18px; } .summaryCard { padding: 18px; } .summaryInfo { grid-template-columns: 1fr; gap: 14px; } .summaryRowActions { flex-wrap: wrap; gap: 8px; } .summaryRowActions .statusBadge { margin-left: 0; } .summaryField { gap: 4px; } .applicationDetails { padding: 16px 12px; } }
 .layout { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 26px; align-items: stretch; }
 .sidebar { display: flex; flex-direction: column; background: white; border: 1px solid #e0e7f1; border-radius: 16px; padding: 22px 16px; }
 .progressHeader { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 10px; font-size: 13px; padding: 0 4px; }
@@ -96,6 +133,16 @@
 .document button { border: 0; background: #f3f7fc; color: #315774; border-radius: 5px; padding: 6px 10px; }
 .actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: auto; padding-top: 24px; border-top: 1px solid #e7edf5; }
 .actions button { padding: 11px 16px; font-size: 13px; border-radius: 8px; font-weight: 600; line-height: 1.7; }
+.advanceActions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; margin-left: auto; }
+.agreementDialog.submitDialog { width: min(560px, calc(100% - 32px)); }
+.submitDialog .agreementDialogHeader h2 { font-size: 23px; line-height: 1.4; }
+.submitDialog .agreementDialogBody { padding-top: 20px; padding-bottom: 20px; }
+.submitDialog .agreementDialogBody p { margin: 0; }
+.submitDialog .agreementDialogBody p + p { margin-top: 16px; }
+.submitDialogActions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; padding: 0 28px 24px; }
+.submitDialogActions button { padding: 11px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; line-height: 1.7; }
+.submitDialogActions .primaryButton { margin-left: 0; }
+@media (max-width: 575px) { .advanceActions { flex: 1 1 100%; } .advanceActions button { flex: 1; } .submitDialogActions { padding: 0 18px 18px; flex-direction: column-reverse; } }
 .primaryButton { background: linear-gradient(120deg, #0092e0, #042070); color: white; border: 1px solid transparent; margin-left: auto; }
 .secondaryButton { background: white; border: 1px solid #d9e3ed; color: #53657c; }
 .saveButton { background: #eff6fd; color: #126994; border: 1px solid #d8e7f5; }
@@ -108,7 +155,7 @@
 .invalidQuestion { border-left: 3px solid #dd7373; padding-left: 12px; }
 .loading { min-height: 420px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
 @media (max-width: 991px) { .heading { align-items: flex-start; flex-direction: column; } .layout { grid-template-columns: 1fr; } .sidebar { position: static; } .sidebar nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; } .savedStatus { margin-top: 8px; } }
-@media (max-width: 575px) { .workspace { padding: 24px 14px 50px; } .formCard { padding: 22px 18px; } .options { grid-template-columns: 1fr; } .sidebar { padding: 18px 12px; } .step { gap: 7px; padding: 10px 6px; } .step strong { font-size: 11px; } .stepNumber { width: 24px; height: 24px; } .actions button { padding: 10px 12px; font-size: 12px; } .account { width: 100%; } }
+@media (max-width: 575px) { .workspace { padding: 24px 14px 50px; } .formCard { padding: 22px 18px; } .options { grid-template-columns: 1fr; } .sidebar { padding: 18px 12px; } .step { gap: 7px; padding: 10px 6px; } .step strong { font-size: 11px; } .stepNumber { width: 24px; height: 24px; } .actions button { padding: 10px 12px; font-size: 12px; } }
 
 .privacyText { max-height: 360px; overflow-y: auto; white-space: pre-wrap; padding: 20px; border: 1px solid #d5deef; background: #f7f9fc; border-radius: 12px; line-height: 1.7; margin-bottom: 18px; }
 .consentLabel { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; font-weight: 600; }
@@ -133,3 +180,10 @@
 .previousAnswers { margin-bottom: 24px; padding: 18px; border: 1px solid #d5deef; border-radius: 12px; background: white; }
 .previousAnswers summary { cursor: pointer; font-weight: 600; }
 .previousAnswers p { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.pdfDialog { width: min(1100px, calc(100% - 32px)); height: calc(100dvh - 48px); max-height: 980px; }
+.pdfPreviewBody { flex: 1; min-height: 0; background: #eef2f6; display: grid; place-items: center; overflow: auto; }
+.pdfPreviewBody iframe { width: 100%; height: 100%; min-height: 250px; border: 0; }
+.pdfPreviewBody > div { padding: 24px; text-align: center; }
+.pdfPreviewActions { display: flex; justify-content: flex-end; align-items: center; gap: 10px; }
+.pdfPreviewActions a { padding: 10px 20px; font-size: 13px; border-radius: 8px; text-decoration: none; }

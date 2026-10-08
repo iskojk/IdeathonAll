@@ -53,18 +53,22 @@ async function resetCodeFromEmail(email) {
 await mongoose.connect(env.MONGODB_URI);
 try {
   const event = await Ideathon.findOne({ registrationOpen: true }).select('_id slug').lean();
-  assert.ok(event, 'Test için kaydı açık bir yerel etkinlik gerekir.');
   for (const entrepreneur of [false, true]) {
     const email = `auth-flow-${randomBytes(8).toString('hex')}@example.com`;
     const password = randomBytes(24).toString('base64url');
     const newPassword = randomBytes(24).toString('base64url');
-    const registerPath = entrepreneur ? '/auth/register' : `/auth/register?event=${encodeURIComponent(event.slug)}`;
-    const registration = await request(registerPath, { method: 'POST', expected: 201, body: { name: 'Yerel Auth Akış Testi', email, password } });
+    const registerPath = entrepreneur || !event ? '/auth/register' : `/auth/register?event=${encodeURIComponent(event.slug)}`;
+    const registration = await request(registerPath, { method: 'POST', expected: 201, body: { name: 'Yerel Auth Akış Testi', email, password, ...(entrepreneur ? { entrepreneur: true, phone: '05' + Array.from(randomBytes(9), byte => byte % 10).join('') } : {}) } });
     const { user, token } = registration.data;
     userIds.push(user._id);
+    assert.equal(registration.data.verificationRequired, undefined, 'Kayıt bir OTP adımı beklememeli.');
     assert.equal(user.role, 'user');
-    assert.equal(user.ideathonId, entrepreneur ? null : String(event._id));
+    assert.equal(user.ideathonId, entrepreneur || !event ? null : String(event._id));
     assert.ok(token, 'Kayıt başarılı olduğunda doğrudan oturum açılmalı.');
+    const registrationMailbox = await fetch(`${mailpit}/api/v1/messages?limit=100`, { signal: AbortSignal.timeout(5000) });
+    assert.equal(registrationMailbox.status, 200);
+    assert.equal((await registrationMailbox.json()).messages.some(item => item.To?.some(to => to.Address === email)), false,
+      'Doğrudan kayıt akışında doğrulama e-postası gönderilmemeli.');
     const stored = await User.findById(user._id).select('+password').lean();
     assert.notEqual(stored.password, password);
     assert.match(stored.password, /^\$2[aby]\$/);

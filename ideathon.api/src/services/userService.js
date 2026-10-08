@@ -130,7 +130,7 @@ class UserService {
       return await this.getUserById(user._id);
     } catch (error) {
       if (error.code === 11000) {
-        throw new Error('Bu email adresi zaten kullanılıyor');
+        throw new Error(error.keyPattern?.phoneKey ? 'Bu telefon numarası zaten kullanılıyor' : 'Bu email adresi zaten kullanılıyor');
       }
       throw error;
     }
@@ -173,7 +173,7 @@ class UserService {
       return await this.getUserById(user._id);
     } catch (error) {
       if (error.code === 11000) {
-        throw new Error('Bu email adresi zaten kullanılıyor');
+        throw new Error(error.keyPattern?.phoneKey ? 'Bu telefon numarası zaten kullanılıyor' : 'Bu email adresi zaten kullanılıyor');
       }
       throw error;
     }
@@ -515,7 +515,7 @@ class UserService {
       return await this.getAdminJuriAccount(account._id);
     } catch (error) {
       if (error.code === 11000) {
-        throw new Error('Bu email adresi zaten kullanılıyor');
+        throw new Error(error.keyPattern?.phoneKey ? 'Bu telefon numarası zaten kullanılıyor' : 'Bu email adresi zaten kullanılıyor');
       }
       throw error;
     }
@@ -584,7 +584,7 @@ class UserService {
       return await this.getAdminJuriAccount(account._id);
     } catch (error) {
       if (error.code === 11000) {
-        throw new Error('Bu email adresi zaten kullanılıyor');
+        throw new Error(error.keyPattern?.phoneKey ? 'Bu telefon numarası zaten kullanılıyor' : 'Bu email adresi zaten kullanılıyor');
       }
       throw error;
     }
@@ -768,7 +768,7 @@ class UserService {
       return await this._enrichChatUser(user._id);
     } catch (error) {
       if (error.code === 11000) {
-        throw new Error('Bu email adresi zaten kullanılıyor');
+        throw new Error(error.keyPattern?.phoneKey ? 'Bu telefon numarası zaten kullanılıyor' : 'Bu email adresi zaten kullanılıyor');
       }
       throw error;
     }
@@ -1058,7 +1058,7 @@ class UserService {
       return await this._enrichChatUser(user._id);
     } catch (error) {
       if (error.code === 11000) {
-        throw new Error('Bu email adresi zaten kullanılıyor');
+        throw new Error(error.keyPattern?.phoneKey ? 'Bu telefon numarası zaten kullanılıyor' : 'Bu email adresi zaten kullanılıyor');
       }
       throw error;
     }

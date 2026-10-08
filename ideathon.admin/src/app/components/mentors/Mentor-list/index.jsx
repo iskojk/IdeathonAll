@@ -158,7 +158,7 @@ const MentorList = () => {
         description: mentor.description || '',
         isActive: mentor.isActive !== undefined ? mentor.isActive : true
       });
-      setPhotoPreview(getMentorPhotoUrl(mentor) || null);
+      setPhotoPreview(mentor.photoUrl || null);
     } else {
       // Yeni ekleme modu
       setIsEditing(false);
@@ -248,7 +248,7 @@ const MentorList = () => {
     } else {
       // Dosya seçimi iptal edildi
       setSelectedFile(null);
-      setPhotoPreview(isEditing && selectedMentor ? getMentorPhotoUrl(selectedMentor) : null);
+      setPhotoPreview(isEditing && selectedMentor ? selectedMentor.photoUrl : null);
       setFormErrors(prev => ({ ...prev, photo: '' }));
     }
   };

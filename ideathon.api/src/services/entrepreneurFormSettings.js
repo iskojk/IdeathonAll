@@ -17,7 +17,7 @@ function integer(value, max, label) {
 }
 
 // Shared allowlist for save/publish. Upload limits and mandatory KVKK cannot be bypassed.
-function validateForm(input) {
+function validateForm(input, { forPublication = false } = {}) {
   if (!input || typeof input !== 'object') fail('Soru seti eksik.');
   if (!Array.isArray(input.sections) || !input.sections.length || input.sections.length > 20) fail('1–20 bölüm olmalıdır.');
   const sectionIds = new Set();
@@ -54,6 +54,7 @@ function validateForm(input) {
   });
   questions.sort((a, b) => sections.findIndex(s => s.id === a.section) - sections.findIndex(s => s.id === b.section));
   const consent = questions.find(question => question.id === 'kvkk_ack');
+  if (forPublication && !questions.some(question => question.type !== 'consent')) fail('Yayımlamak için en az bir başvuru sorusu ekleyin.');
   if (!consent || consent.type !== 'consent' || !consent.required || questions.at(-1) !== consent || consent.help.length < 50) fail('Son soru zorunlu KVKK onayı ve aydınlatma metni olmalıdır.');
   const privacy = { text: consent.help, version: hash(consent.help), draft: input.privacy?.draft !== false };
   if (!privacy.draft && /\[[^\]]+\]/.test(privacy.text)) fail('KVKK metnindeki kurum bilgilerini tamamlamadan taslak işaretini kaldıramazsınız.');
@@ -74,7 +75,7 @@ async function getSettings() {
 
 async function updateSettings({ form, revision }, userId, publish = false) {
   if (!Number.isInteger(revision) || revision < 0) fail('Soru setinin kayıt sürümü eksik.', 409);
-  const validated = validateForm(form);
+  const validated = validateForm(form, { forPublication: publish });
   await getSettings();
   const changes = { draft: validated, updatedBy: userId };
   if (publish) {

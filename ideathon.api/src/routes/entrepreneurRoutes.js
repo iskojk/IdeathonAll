@@ -8,6 +8,7 @@ const { getEntrepreneurForm } = require('../services/entrepreneurFormSource');
 const { draftFormUpgrade } = require('../services/entrepreneurFormMigration');
 const { validateAnswers, validDocument } = require('../services/entrepreneurValidation');
 const { normalizeDocumentName } = require('../services/entrepreneurDocumentName');
+const { workingApplication } = require('../services/entrepreneurWorkflow');
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024, files: 1, fields: 1, parts: 3 } });
@@ -20,13 +21,19 @@ function conflict(message = 'Başvurunuz başka bir sekmede değişti. Sayfayı 
 
 function checkDraft(application, revision) {
   if (!application) throw conflict('Dosya yüklemeden önce taslağı kaydedin.');
-  if (application.status !== 'draft') throw conflict('Gönderilmiş başvuru değiştirilemez.');
+  if (application.status !== 'draft' && !application.editDraft) throw conflict('Başvuruyu düzenlemek için önce Başvurumu Düzenle seçeneğini kullanın.');
   if (!Number.isInteger(Number(revision)) || revision === undefined || Number(revision) !== application.__v) throw conflict();
 }
 
 function publicApplication(application) {
-  const data = application.toObject ? application.toObject() : application;
-  return { _id: data._id, answers: data.answers, documents: data.documents, status: data.status, revision: data.__v, updatedAt: data.updatedAt, submittedAt: data.submittedAt, privacy: data.privacy, previousVersions: data.previousVersions };
+  const data = workingApplication(application);
+  return { _id: data._id, applicationNumber: data.applicationNumber, answers: data.answers, documents: data.documents, status: data.status, reviewStatus: data.reviewStatus || 'submitted', viewedAt: data.viewedAt, isResubmission: !!data.isResubmission, revision: data.__v, updatedAt: data.updatedAt, submittedAt: data.submittedAt, privacy: data.privacy, previousVersions: data.previousVersions };
+}
+
+const draftDocuments = application => application.editDraft?.documents || application.documents;
+async function cleanDocuments(application, ids) {
+  if (ids.length) await Document.deleteMany({ _id: { $in: ids }, userId: application.userId, applicationId: application._id })
+    .catch(() => console.error('Girişimci düzenleme evrak temizliği tamamlanamadı.'));
 }
 
 async function loadApplication(userId) {
@@ -45,6 +52,40 @@ router.get('/my', async (req, res) => {
   res.json({ success: true, data: { form: application?.form || await getEntrepreneurForm(), application: application ? publicApplication(application) : null } });
 });
 
+router.post('/my/edit', async (req, res) => {
+  const application = await Application.findOne({ userId: req.user._id, status: 'submitted' });
+  if (!application) throw conflict('Düzenlenebilecek gönderilmiş bir başvurunuz yok.');
+  if (req.body.revision !== application.__v) throw conflict();
+  if (!application.editDraft) {
+    application.editDraft = { answers: structuredClone(application.answers), documents: application.documents.toObject(), startedAt: new Date() };
+    await application.save();
+  }
+  res.json({ success: true, data: { form: application.form, application: publicApplication(application) } });
+});
+
+router.post('/my/cancel-edit', async (req, res) => {
+  const application = await Application.findOne({ userId: req.user._id, status: 'submitted' });
+  if (!application?.editDraft) throw conflict('Açık bir düzenleme taslağınız yok.');
+  checkDraft(application, req.body.revision);
+  const originalIds = new Set(application.documents.map(doc => String(doc._id)));
+  const unused = application.editDraft.documents.filter(doc => !originalIds.has(String(doc._id))).map(doc => doc._id);
+  application.editDraft = undefined;
+  await application.save();
+  await cleanDocuments(application, unused);
+  res.json({ success: true, data: { application: publicApplication(application) } });
+});
+
+router.get('/my/export', async (req, res) => {
+  if (req.query.format !== 'pdf') return res.status(400).json({ success: false, message: 'Yalnızca PDF biçiminde dışa aktarılabilir.' });
+  // Ownership comes only from the authenticated session, never a client-supplied ID.
+  const application = await Application.findOne({ userId: req.user._id, status: 'submitted' })
+    .select('applicationNumber form answers documents status reviewStatus source contact createdAt updatedAt submittedAt privacy previousVersions').lean();
+  if (!application) return res.status(404).json({ success: false, message: 'İndirilebilecek gönderilmiş bir başvurunuz bulunamadı.' });
+  const { _id, name, email, phone } = req.user;
+  const file = await require('../services/entrepreneurExport').generate({ ...application, applicant: { _id, name, email, phone } }, 'pdf');
+  res.type(file.mimeType).attachment(file.name).send(file.contents);
+});
+
 router.put('/my', async (req, res) => {
   const { answers, submit = false, revision, formVersion } = req.body;
   if (typeof submit !== 'boolean') return res.status(400).json({ success: false, message: 'Gönderim durumu geçersiz.' });
@@ -52,15 +93,35 @@ router.put('/my', async (req, res) => {
   if (application) checkDraft(application, revision);
   const form = application?.form || await getEntrepreneurForm();
   if (formVersion !== form.version) throw conflict('Soru seti güncellendi. Sayfayı yenileyin.');
-  const result = validateAnswers(form, answers, application?.documents || [], submit);
+  const result = validateAnswers(form, answers, application ? draftDocuments(application) : [], submit);
   if (Object.keys(result.errors).length) {
     return res.status(422).json({ success: false, message: 'Lütfen işaretli alanları kontrol edin.', errors: result.errors });
   }
   if (!application) application = new Application({ userId: req.user._id, form: JSON.parse(JSON.stringify(form)) });
-  application.answers = result.answers;
+  const resubmitting = !!application.editDraft;
+  let unused = [];
+  if (resubmitting && !submit) application.editDraft.answers = result.answers;
+  else application.answers = result.answers;
   if (submit) {
+    if (resubmitting) {
+      const retained = new Set(application.editDraft.documents.map(doc => String(doc._id)));
+      unused = application.documents.filter(doc => !retained.has(String(doc._id))).map(doc => doc._id);
+      application.documents = application.editDraft.documents.toObject();
+      application.editDraft = undefined;
+      if (application.source === 'admin') {
+        const name = result.answers.full_name || [result.answers.first_name, result.answers.last_name].filter(Boolean).join(' ');
+        application.contact = { ...application.toObject().contact, ...(name && { name }),
+          ...(result.answers.email && { email: result.answers.email }), ...(result.answers.phone && { phone: result.answers.phone }),
+          ...(result.answers.venture_name && { ventureName: result.answers.venture_name }) };
+      }
+    }
     application.status = 'submitted';
     application.submittedAt = new Date();
+    application.reviewStatus = 'submitted';
+    application.viewedAt = undefined;
+    application.viewedBy = undefined;
+    application.reviewedAt = undefined;
+    application.reviewedBy = undefined;
     const consent = form.questions.find(question => question.id === 'kvkk_ack' && question.type === 'consent');
     if (consent) application.privacy = { text: consent.help, version: consent.privacyVersion, draft: consent.privacyDraft, acknowledgedAt: application.submittedAt };
     if (form.agreements?.length) application.privacy = { ...application.privacy,
@@ -68,24 +129,25 @@ router.put('/my', async (req, res) => {
     };
   }
   await application.save();
+  await cleanDocuments(application, unused);
   res.json({ success: true, data: { application: publicApplication(application) } });
 });
 
 router.post('/documents/:questionId', async (req, res, next) => {
   req.application = await loadApplication(req.user._id);
-  if (!req.application || req.application.status !== 'draft') throw conflict('Evrak yüklemek için açık bir başvuru taslağı gerekir.');
+  if (!req.application || (req.application.status !== 'draft' && !req.application.editDraft)) throw conflict('Evrak yüklemek için açık bir başvuru taslağı gerekir.');
   req.question = req.application.form.questions.find(q => q.id === req.params.questionId && q.type === 'file');
   if (!req.question) return res.status(400).json({ success: false, message: 'Evrak alanı bulunamadı.' });
   next();
 }, upload.single('file'), async (req, res) => {
   const application = req.application;
   checkDraft(application, req.body.revision);
-  const count = application.documents.filter(doc => doc.questionId === req.question.id).length;
+  const count = draftDocuments(application).filter(doc => doc.questionId === req.question.id).length;
   if (count >= req.question.maxFiles) return res.status(422).json({ success: false, message: `Bu alana en fazla ${req.question.maxFiles} dosya eklenebilir.` });
   if (!req.file || !validDocument(req.file)) return res.status(422).json({ success: false, message: 'Geçerli bir PDF, PNG veya JPEG dosyası seçin.' });
   const name = normalizeDocumentName(req.file.originalname);
   const document = await Document.create({ userId: req.user._id, applicationId: application._id, name, mimeType: req.file.mimetype, contents: req.file.buffer });
-  application.documents.push({ _id: document._id, questionId: req.question.id, name, mimeType: req.file.mimetype, size: req.file.size });
+  draftDocuments(application).push({ _id: document._id, questionId: req.question.id, name, mimeType: req.file.mimetype, size: req.file.size });
   try { await application.save(); }
   catch (error) { await Document.deleteOne({ _id: document._id }); throw error; }
   res.status(201).json({ success: true, data: { application: publicApplication(application) } });
@@ -101,12 +163,13 @@ router.get('/documents/:id', async (req, res) => {
 router.delete('/documents/:id', async (req, res) => {
   const application = await loadApplication(req.user._id);
   checkDraft(application, req.body.revision);
-  const document = application.documents.id(req.params.id);
+  const document = draftDocuments(application).id(req.params.id);
   if (!document) return res.status(404).json({ success: false, message: 'Evrak bulunamadı.' });
   const documentId = document._id;
-  application.documents.pull(documentId);
+  const keepSubmittedDocument = !!application.editDraft && !!application.documents.id(documentId);
+  draftDocuments(application).pull(documentId);
   await application.save();
-  await Document.deleteOne({ _id: documentId, userId: req.user._id });
+  if (!keepSubmittedDocument) await cleanDocuments(application, [documentId]);
   res.json({ success: true, data: { application: publicApplication(application) } });
 });
 

@@ -23,9 +23,9 @@ const SidebarItems = () => {
 
   // Menu öğelerini filtrele - Belirli sayfalar sadece superadmin için
   const canSeeItem = (item) => {
+    if (item.roles && !item.roles.includes(user?.role)) return false;
     // Subheader'ları her zaman göster
     if (item.subheader) return true;
-    if (item.roles && !item.roles.includes(user?.role)) return false;
 
     // Admin/Juri Hesapları ve İdeathon Yönetimi sadece superadmin görebilir
     if (item.href === '/admin-juri/accounts' || item.href === '/ideathons') {

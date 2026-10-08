@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const Application = require('../models/Application');
 const Contact = require('../models/Contact');
-const Mentor = require('../models/Mentor');
+const MentorProfile = require('../models/MentorProfile');
 const Team = require('../models/Team');
 const Ideathon = require('../models/Ideathon');
 const TeamEvaluation = require('../models/TeamEvaluation');
@@ -40,7 +40,7 @@ class DashboardController {
           { $group: { _id: '$status', count: { $sum: 1 } } }
         ]),
 
-        Mentor.countDocuments({ isActive: true, ...idFilter }),
+        MentorProfile.countDocuments({ isActive: true, ...idFilter }),
 
         Team.aggregate([
           { $match: { isActive: true, ...idFilter } },

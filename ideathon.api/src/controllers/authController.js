@@ -3,6 +3,10 @@ const User = require('../models/User');
 const UserIdeathonRole = require('../models/UserIdeathonRole');
 const { generateToken } = require('../middleware/auth');
 const emailService = require('../services/emailService');
+const { normalizePhone } = require('../services/entrepreneurPhone');
+const identityConflict = error => error.keyPattern?.phoneKey || error.keyValue?.phoneKey
+  ? 'Daha önce bu telefon numarası kullanılmıştır.'
+  : 'Daha önce bu e-posta adresi kullanılmıştır.';
 
 class AuthController {
   // Kullanıcı girişi
@@ -244,7 +248,7 @@ class AuthController {
       if (error.code === 11000) {
         return res.status(409).json({
           success: false,
-          message: 'Bu email adresi zaten kullanılıyor'
+          message: identityConflict(error)
         });
       }
 
@@ -259,7 +263,9 @@ class AuthController {
   // Multi-Tenant: ?event=slug veya body.ideathonId ile ideathon bağlantısı kurulur
   async publicRegister(req, res) {
     try {
-      const { name, email, password, phone } = req.body;
+      const { name, password, phone } = req.body;
+      const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+      const entrepreneur = req.body.entrepreneur === true;
 
       // Validation
       if (!name || !email || !password) {
@@ -285,6 +291,17 @@ class AuthController {
           message: 'Şifre en az 6 karakter olmalıdır'
         });
       }
+
+      if (entrepreneur && (typeof phone !== 'string' || !phone.trim())) {
+        return res.status(400).json({ success: false, message: 'Telefon numarası zorunludur.', errors: { phone: 'Telefon numarası zorunludur.' } });
+      }
+      let phoneKey;
+      if (phone !== undefined && phone !== '') {
+        phoneKey = typeof phone === 'string' ? normalizePhone(phone) : null;
+        if (!phoneKey) return res.status(400).json({ success: false, message: 'Geçerli bir telefon numarası giriniz.', errors: { phone: 'Geçerli bir telefon numarası giriniz.' } });
+      }
+      if (await User.exists({ email })) return res.status(409).json({ success: false, message: 'Daha önce bu e-posta adresi kullanılmıştır.' });
+      if (phoneKey && await User.phoneInUse(phoneKey)) return res.status(409).json({ success: false, message: 'Daha önce bu telefon numarası kullanılmıştır.' });
 
       // Multi-Tenant: ideathonId çözümle
       // Kaynak 1: attachIdeathonFromQuerySlug middleware → req.ideathonId
@@ -358,7 +375,7 @@ class AuthController {
       if (error.code === 11000) {
         return res.status(409).json({
           success: false,
-          message: 'Bu email adresi zaten kullanılıyor'
+          message: identityConflict(error)
         });
       }
 
@@ -436,7 +453,7 @@ class AuthController {
       if (error.code === 11000) {
         return res.status(409).json({
           success: false,
-          message: 'Bu email adresi zaten kullanılıyor'
+          message: identityConflict(error)
         });
       }
 
@@ -752,7 +769,7 @@ class AuthController {
       if (error.code === 11000) {
         return res.status(409).json({
           success: false,
-          message: 'Bu email adresi zaten kullanılıyor'
+          message: identityConflict(error)
         });
       }
 
@@ -1105,7 +1122,7 @@ class AuthController {
         if (emailExists) {
           return res.status(400).json({
             success: false,
-            message: 'Bu email adresi zaten kullanılıyor'
+            message: 'Daha önce bu e-posta adresi kullanılmıştır.'
           });
         }
         user.email = email.toLowerCase();
