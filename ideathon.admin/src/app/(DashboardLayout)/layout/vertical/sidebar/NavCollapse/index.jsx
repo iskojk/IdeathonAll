@@ -45,13 +45,15 @@ export default function NavCollapse({
 
   // menu collapse for sub-levels
   React.useEffect(() => {
+    // This group is opened by the user and stays open while switching its pages.
+    if (menu.autoExpand === false) return;
     setOpen(false);
     menu?.children?.forEach((item) => {
       if (item?.href === pathname) {
         setOpen(true);
       }
     });
-  }, [pathname, menu.children]);
+  }, [pathname, menu.children, menu.autoExpand]);
 
   const ListItemStyled = styled(ListItemButton)(() => ({
     marginBottom: '2px',
@@ -59,6 +61,14 @@ export default function NavCollapse({
     paddingLeft: hideMenu ? '10px' : level > 2 ? `${level * 15}px` : '10px',
     backgroundColor: open && level < 2 ? theme.palette.primary.main : '',
     whiteSpace: 'nowrap',
+    '&.Mui-selected': {
+      backgroundColor: open && level < 2 ? theme.palette.primary.main : theme.palette.primary.light,
+      color: open && level < 2 ? 'white' : theme.palette.primary.main,
+      '&:hover': {
+        backgroundColor: theme.palette.primary.main,
+        color: 'white',
+      },
+    },
     '&:hover': {
       backgroundColor:
         pathname.includes(menu.href) || open
@@ -107,6 +117,8 @@ export default function NavCollapse({
     <>
       <ListItemStyled
         onClick={handleClick}
+        aria-expanded={open}
+        aria-controls={`sidebar-submenu-${menu.id}`}
         selected={pathWithoutLastPart === menu.href}
         key={menu?.id}
       >
@@ -122,7 +134,13 @@ export default function NavCollapse({
         <ListItemText color="inherit">{hideMenu ? '' : <>{t(`${menu.title}`)}</>}</ListItemText>
         {!open ? <IconChevronDown size="1rem" /> : <IconChevronUp size="1rem" />}
       </ListItemStyled>
-      <Collapse in={open} timeout="auto">
+      <Collapse
+        id={`sidebar-submenu-${menu.id}`}
+        in={open}
+        timeout="auto"
+        unmountOnExit
+        sx={{ pl: hideMenu ? 0 : 2 }}
+      >
         {submenus}
       </Collapse>
     </>

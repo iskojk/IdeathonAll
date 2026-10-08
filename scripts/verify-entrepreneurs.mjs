@@ -91,6 +91,7 @@ try {
   await request(`/entrepreneurs/admin/${application._id}/documents/${document._id}`, { token: adminToken, expected: 404 });
   const draftPool = await (await request('/entrepreneurs/admin', { token: adminToken })).json();
   assert.ok(!draftPool.data.some(item => item._id === application._id));
+  await request(`/entrepreneurs/admin/${application._id}/export?format=pdf`, { token: adminToken, expected: 404 });
   await request('/entrepreneurs/documents/pitch_deck', { token, method: 'POST', expected: 422, body: uploadBody(pdf, 'ikinci.pdf', 'application/pdf', application.revision) });
   await request(`/entrepreneurs/documents/${document._id}`, { expected: 401 });
   await request(`/entrepreneurs/documents/${document._id}`, { token: otherToken, expected: 404 });
@@ -144,7 +145,7 @@ try {
 
   const detailPath = `/entrepreneurs/admin/${application._id}`;
   const filePath = `${detailPath}/documents/${application.documents[0]._id}`;
-  for (const path of ['/entrepreneurs/admin', detailPath, filePath]) {
+  for (const path of ['/entrepreneurs/admin', detailPath, filePath, `${detailPath}/export?format=pdf`, `${detailPath}/export?format=docx`]) {
     await request(path, { expected: 401 });
     for (const deniedToken of deniedTokens) await request(path, { token: deniedToken, expected: 403 });
   }
@@ -169,12 +170,25 @@ try {
     assert.match(adminDownload.headers.get('content-disposition'), /^attachment/);
     assert.ok(adminDownload.headers.get('content-disposition').includes(encodeURIComponent(documentName)));
     assert.equal(await adminDownload.text(), pdf);
+    for (const format of ['pdf']) {
+      const exported = await request(`${detailPath}/export?format=${format}`, { token: managerToken });
+      assert.equal(exported.headers.get('cache-control'), 'no-store');
+      assert.match(exported.headers.get('content-disposition'), /^attachment/);
+      assert.ok(exported.headers.get('content-disposition').includes(`.${format}`));
+      assert.match(exported.headers.get('content-type'), /application\/pdf/);
+      const contents = Buffer.from(await exported.arrayBuffer());
+      assert.ok(contents.length > 1000);
+      assert.equal(contents.subarray(0, 5).toString(), '%PDF-');
+    }
   }
   // Havuz seçili Ideathon'a göre kaybolmaz.
   const globalResponse = await fetch(`${base}/entrepreneurs/admin?search=${encodeURIComponent(searchKey)}`, { headers: { Authorization: `Bearer ${adminToken}`, 'X-Ideathon-Id': new mongoose.Types.ObjectId().toString() } });
   assert.equal(globalResponse.status, 200);
   assert.equal((await globalResponse.json()).pagination.total, 1);
   for (const query of ['page=0', 'limit=51', 'sort=invalid', 'search=a&search=b']) await request(`/entrepreneurs/admin?${query}`, { token: adminToken, expected: 400 });
+  await request(`${detailPath}/export?format=docx`, { token: adminToken, expected: 400 });
+  await request(`${detailPath}/export?format=html`, { token: adminToken, expected: 400 });
+  await request('/entrepreneurs/admin/invalid-id/export?format=pdf', { token: adminToken, expected: 404 });
   await request('/entrepreneurs/admin/invalid-id', { token: adminToken, expected: 404 });
   await request(`${detailPath}/documents/${new mongoose.Types.ObjectId()}`, { token: adminToken, expected: 404 });
 

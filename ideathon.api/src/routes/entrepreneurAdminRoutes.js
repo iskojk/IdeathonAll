@@ -33,6 +33,7 @@ router.put('/form/drafts/:draftId', requireSuperAdmin, async (req, res) => {
 router.post('/form/drafts/:draftId/publish', requireSuperAdmin, async (req, res) => {
   res.json({ success: true, data: await drafts.publishDraft(req.params.draftId, req.body, req.user._id) });
 });
+router.get('/:id/export', controller.export);
 router.get('/:id', controller.detail);
 router.get('/:id/documents/:documentId', controller.document);
 router.use((error, req, res, next) => {

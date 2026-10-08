@@ -3,13 +3,16 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '@/context/AuthContext';
-import { authAPI, entrepreneurAPI } from '@/lib/api';
+import { authAPI, entrepreneurAPI, messagingAPI } from '@/lib/api';
 import EntrepreneurApplicationForm from '@/components/EntrepreneurApplicationForm';
+// This fixture is copied into pages/ by the browser runner.
+import Entrepreneurs from './girisimciler/index';
 
 export default function EntrepreneurFormTest() {
   const { user, login } = useAuth();
   const router = useRouter();
   const [result, setResult] = useState('RUNNING');
+  const [screen, setScreen] = useState('form');
   useEffect(() => {
     const reportUrl = '__QA_REPORT_URL__';
     if (reportUrl.startsWith('http://127.0.0.1:') && /^(PASS|FAIL):/.test(result)) {
@@ -30,10 +33,22 @@ export default function EntrepreneurFormTest() {
       { id: 'terms_ack', type: 'consent', required: true, label: 'Kullanım Şartları', url: 'https://ideathon.anahtarfikirler.com/kullanim-sartlari' },
     ] };
     const testUser = { _id: 'qa-draft-user', name: 'Test', email: 'test@example.com', role: 'user' };
-    const originals = { login: authAPI.login, getMe: authAPI.getMe, get: entrepreneurAPI.getMyApplication, save: entrepreneurAPI.saveApplication, confirm: window.confirm };
+    const originals = { login: authAPI.login, getMe: authAPI.getMe, get: entrepreneurAPI.getMyApplication, save: entrepreneurAPI.saveApplication, unread: messagingAPI.getUnreadCount, confirm: window.confirm };
     authAPI.login = async () => ({ success: true, data: { user: testUser, token: 'local-ui-fixture' } });
     authAPI.getMe = async () => ({ success: true, data: testUser });
-    entrepreneurAPI.getMyApplication = async () => ({ data: { form, application: structuredClone(server) } });
+    messagingAPI.getUnreadCount = async () => ({ data: { unreadCount: 0 } });
+    let holdGet = false;
+    let releaseGet;
+    let failGet = false;
+    entrepreneurAPI.getMyApplication = async () => {
+      // Strict Mode can run both the cancelled and active mount requests.
+      if (holdGet) await new Promise(resolve => {
+        const previous = releaseGet;
+        releaseGet = () => { previous?.(); resolve(); };
+      });
+      if (failGet) throw new Error('Test durum bağlantısı kesildi');
+      return { data: { form, application: structuredClone(server) } };
+    };
     let saves = 0;
     let release;
     let holdNextSave = false;
@@ -141,8 +156,25 @@ export default function EntrepreneurFormTest() {
       const terms = document.getElementById('answer-terms_ack');
       assert(!!(kvkk.compareDocumentPosition(privacy) & Node.DOCUMENT_POSITION_FOLLOWING) && !!(privacy.compareDocumentPosition(terms) & Node.DOCUMENT_POSITION_FOLLOWING), 'Onaylar KVKK altında doğru sırada değil');
       for (const agreement of form.agreements) {
-        const link = document.getElementById(`question-${agreement.id}`).querySelector('a');
-        assert(link.href === agreement.url && link.target === '_blank', 'Resmi metin bağlantısı yanlış');
+        const link = document.getElementById(`question-${agreement.id}`).querySelector('button');
+        const locationBefore = window.location.href;
+        assert(link.textContent === agreement.label && link.getAttribute('aria-haspopup') === 'dialog', 'Metin açma düğmesi yanlış');
+        link.focus();
+        link.click();
+        await wait(() => document.querySelector('dialog')?.open, 'Metin aynı ekranda açılmadı');
+        const dialog = document.querySelector('dialog');
+        assert(dialog.matches(':modal') && dialog.contains(document.activeElement), 'Okuma penceresi modal değil veya odak içeride değil');
+        assert(dialog.querySelector('h2').textContent === agreement.label, 'Yanlış metin başlığı açıldı');
+        assert(dialog.textContent.includes('Son güncelleme: Mart 2026') && dialog.textContent.includes('info@anahtarfikirler.com'), 'Metnin son bölümleri eksik');
+        assert(dialog.textContent.includes(agreement.id === 'privacy_policy_ack' ? '2. Veri Sorumlusu' : '4. Yasaklı Kullanımlar'), 'Yanlış metin içeriği açıldı');
+        assert(window.location.href === locationBefore && !document.getElementById(`answer-${agreement.id}`).checked, 'Metni okumak yönlendirdi veya otomatik onayladı');
+        assert(document.body.style.overflow === 'hidden', 'Okuma sırasında arka plan kaydırması kilitlenmedi');
+        privacy.focus();
+        assert(dialog.contains(document.activeElement), 'Odak okuma penceresinden çıktı');
+        if (agreement.id === 'privacy_policy_ack') dialog.dispatchEvent(new Event('cancel', { cancelable: true }));
+        else [...dialog.querySelectorAll('button')].find(button => button.textContent === 'Başvuruya dön').click();
+        await wait(() => !document.querySelector('dialog'), 'Okuma penceresi kapanmadı');
+        assert(document.activeElement === link && document.body.style.overflow !== 'hidden', 'Pencere kapanınca odak veya kaydırma geri yüklenmedi');
         assert(!document.getElementById(`answer-${agreement.id}`).checked, 'Onay otomatik işaretlenmiş');
       }
       await wait(() => !document.getElementById('answer-kvkk_ack').disabled, 'Onay alanı yüklenmedi');
@@ -174,13 +206,55 @@ export default function EntrepreneurFormTest() {
       assert(!server.documents.length, 'Belgesiz başvuru testi evrak içeriyor');
       assert(!document.querySelector('details').open, 'Özet kapalı değil');
       assert(!sessionStorage.getItem('entrepreneur-draft:qa-draft-user'), 'Gönderimden sonra taslak kaldı');
-      setResult('PASS: required-field progress, optional date/documents, consent progress and optional-only sections, date input and saved date, navigation cancellation, autosave, pending-save typing/navigation, revision conflicts, failed-save recovery, browser back, ordered official policy links, three independently required consent checkboxes, document-free submission');
+      document.querySelector('summary').click();
+      await wait(() => document.querySelector('details').open, 'Başvuru detayları açılmadı');
+      sectionButton('İletişim').click();
+      await wait(() => field(), 'Gönderilen yanıtlar görüntülenemedi');
+      assert(field().disabled && field().value === server.answers.venture_name, 'Gönderilen başvuru salt okunur görüntülenmedi');
+      document.querySelector('summary').click();
+      assert(!document.querySelector('details').open, 'Başvuru detayları kapatılamadı');
+
+      setResult('RUNNING: entrepreneur entry status');
+      const entry = () => document.querySelector('.entrepreneur-card');
+      const continueLink = () => entry()?.textContent.includes('Başvuruya Devam Et');
+      const viewLink = () => entry()?.querySelector('a.entrepreneur-view-button');
+      const remountEntry = async () => {
+        setScreen('none');
+        await wait(() => !entry() && !document.querySelector('details'), 'Önceki ekran kapatılamadı');
+        setScreen('entry');
+      };
+      setScreen('entry');
+      await wait(() => entry()?.textContent.includes('Başvurunuz iletildi'), 'Gönderilmiş başvuru bilgisi girişimci sayfasında gösterilmedi');
+      assert(!continueLink(), 'Gönderilmiş başvuruda devam düğmesi kaldı');
+      assert(viewLink()?.getAttribute('href') === '/girisimciler/basvuru', 'Başvuruyu görüntüle düğmesi yanlış sayfaya gidiyor');
+      await login('test@example.com', 'fixture-only');
+      await remountEntry();
+      await wait(() => entry()?.textContent.includes('Başvurunuz iletildi'), 'Tekrar girişte gönderilmiş başvuru durumu kayboldu');
+
+      server = { ...server, status: 'draft' };
+      holdGet = true;
+      releaseGet = null;
+      await remountEntry();
+      await wait(() => releaseGet, 'Başvuru durumu sorgulanmadı');
+      assert(!continueLink() && !entry().textContent.includes('Başvurunuz iletildi'), `Durum sorgulanırken eski veya varsayılan durum gösterildi: ${entry()?.textContent}`);
+      holdGet = false;
+      releaseGet();
+      await wait(() => continueLink(), 'Taslak başvuruda devam düğmesi gösterilmedi');
+      server = null;
+      await remountEntry();
+      await wait(() => continueLink(), 'Başvurusu olmayan hesapta devam düğmesi gösterilmedi');
+      failGet = true;
+      await remountEntry();
+      await wait(() => entry()?.textContent.includes('Başvuru durumunuz şu anda alınamadı'), 'Durum hatası gösterilmedi');
+      assert(!continueLink() && viewLink(), 'Durum hatasında yanlış devam düğmesi gösterildi veya görüntüleme engellendi');
+      setResult('PASS: form autosave/recovery, required progress/agreements, inline privacy/terms reading without navigation or auto-consent, modal focus/scroll and close recovery, document-free submission, readonly summary expand/collapse, submitted entry and re-login, draft/new entry, pending lookup and failed lookup');
     })().catch(error => { if (!cancelled) setResult(`FAIL: ${error.message}`); });
     return () => {
       cancelled = true;
       authAPI.login = originals.login; authAPI.getMe = originals.getMe;
       entrepreneurAPI.getMyApplication = originals.get; entrepreneurAPI.saveApplication = originals.save; window.confirm = originals.confirm;
+      messagingAPI.getUnreadCount = originals.unread;
     };
   }, []);
-  return <><pre id="qa-result">{result}</pre><Link id="qa-away" href={`${router.pathname}?away=1`}>Başka sayfa</Link>{router.query.away ? <p>Başka sayfa</p> : user?._id === 'qa-draft-user' && <EntrepreneurApplicationForm />}</>;
+  return <><pre id="qa-result">{result}</pre><Link id="qa-away" href={`${router.pathname}?away=1`}>Başka sayfa</Link>{router.query.away ? <p>Başka sayfa</p> : user?._id === 'qa-draft-user' && (screen === 'form' ? <EntrepreneurApplicationForm /> : screen === 'entry' ? <Entrepreneurs /> : null)}</>;
 }

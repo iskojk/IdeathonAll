@@ -64,15 +64,15 @@ export default function EntrepreneurPool() {
         {!result.data.length ? <Alert severity="info">{query ? 'Aramanızla eşleşen bir başvuru bulunamadı.' : 'Henüz gönderilmiş başvuru yok. Girişimciler formu gönderdiğinde burada görünecek; kaydedilen taslaklar havuza alınmaz.'}</Alert> : <TableContainer>
           <Table aria-label="Girişimci başvuruları" sx={{ minWidth: 760 }}>
             <TableHead><TableRow>
-              <TableCell>Girişim</TableCell><TableCell>Başvuran</TableCell><TableCell>Gönderim tarihi</TableCell><TableCell>Evrak</TableCell><TableCell>Durum</TableCell><TableCell align="right">İşlem</TableCell>
+              <TableCell>Girişim</TableCell><TableCell>Başvuran</TableCell><TableCell>Gönderim tarihi</TableCell><TableCell>Evrak</TableCell><TableCell align="center" sx={{ width: 140, whiteSpace: 'nowrap' }}>Durum</TableCell><TableCell align="center" sx={{ width: 120, whiteSpace: 'nowrap' }}>İşlem</TableCell>
             </TableRow></TableHead>
             <TableBody>{result.data.map(application => <TableRow key={application._id} hover>
               <TableCell sx={{ maxWidth: 250, overflowWrap: 'anywhere' }}><Typography fontWeight={600}>{application.ventureName || 'Girişim başvurusu'}</Typography></TableCell>
               <TableCell sx={{ maxWidth: 260, overflowWrap: 'anywhere' }}><Typography>{application.contactName || '—'}</Typography><Typography variant="body2" color="text.secondary">{application.contactEmail || '—'}</Typography></TableCell>
               <TableCell>{formatDate(application.submittedAt)}</TableCell>
               <TableCell>{application.documentCount} dosya</TableCell>
-              <TableCell><Chip size="small" color="success" label="Gönderildi" /></TableCell>
-              <TableCell align="right"><Button component={Link} href={`/entrepreneurs/${application._id}`} startIcon={<IconEye size={18} />} aria-label={`${application.ventureName || application.contactName || 'Başvuru'} detaylarını görüntüle`}>Detay</Button></TableCell>
+              <TableCell align="center" sx={{ whiteSpace: 'nowrap' }}><Chip size="small" color="success" label="Gönderildi" sx={{ minWidth: 92, fontWeight: 500 }} /></TableCell>
+              <TableCell align="center" sx={{ whiteSpace: 'nowrap' }}><Button component={Link} href={`/entrepreneurs/${application._id}`} size="small" startIcon={<IconEye size={18} />} sx={{ minWidth: 82 }} aria-label={`${application.ventureName || application.contactName || 'Başvuru'} detaylarını görüntüle`}>Detay</Button></TableCell>
             </TableRow>)}</TableBody>
           </Table>
         </TableContainer>}

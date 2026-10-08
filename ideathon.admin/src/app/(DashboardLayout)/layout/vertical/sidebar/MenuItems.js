@@ -89,17 +89,27 @@ const Menuitems = [
   },
   {
     id: uniqueId(),
-    title: 'Girişimci Havuzu',
+    title: 'Girişimciler',
     icon: IconBuilding,
-    href: '/entrepreneurs/list',
+    href: '/entrepreneurs',
     roles: ['admin', 'superadmin'],
-  },
-  {
-    id: uniqueId(),
-    title: 'Girişimci Soru Seti',
-    icon: IconFileDots,
-    href: '/entrepreneurs/form',
-    roles: ['superadmin'],
+    autoExpand: false,
+    children: [
+      {
+        id: uniqueId(),
+        title: 'Girişimci Havuzu',
+        icon: IconBuilding,
+        href: '/entrepreneurs/list',
+        roles: ['admin', 'superadmin'],
+      },
+      {
+        id: uniqueId(),
+        title: 'Girişimci Soru Seti',
+        icon: IconFileDots,
+        href: '/entrepreneurs/form',
+        roles: ['superadmin'],
+      },
+    ],
   },
   {
     id: uniqueId(),

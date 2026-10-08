@@ -13,6 +13,7 @@ export const entrepreneurAdminAPI = {
   publishFormDraft: async (id, revision, settingsRevision) => (await api.post(`${base}/form/drafts/${encodeURIComponent(id)}/publish`, { revision, settingsRevision })).data.data,
   list: async (params, signal) => (await api.get(base, { params, signal })).data,
   detail: async (id, signal) => (await api.get(`${base}/${encodeURIComponent(id)}`, { signal })).data.data,
+  export: async (id, format, signal) => (await api.get(`${base}/${encodeURIComponent(id)}/export`, { params: { format }, responseType: 'blob', signal })).data,
   document: async (id, documentId, signal) => (await api.get(`${base}/${encodeURIComponent(id)}/documents/${encodeURIComponent(documentId)}`, { responseType: 'blob', signal })).data,
 };
 

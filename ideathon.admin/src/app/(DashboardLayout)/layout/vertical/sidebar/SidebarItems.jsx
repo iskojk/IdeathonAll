@@ -22,7 +22,7 @@ const SidebarItems = () => {
   const { user } = useAuth();
 
   // Menu öğelerini filtrele - Belirli sayfalar sadece superadmin için
-  const filteredMenuItems = Menuitems.filter((item) => {
+  const canSeeItem = (item) => {
     // Subheader'ları her zaman göster
     if (item.subheader) return true;
     if (item.roles && !item.roles.includes(user?.role)) return false;
@@ -34,7 +34,12 @@ const SidebarItems = () => {
 
     // Diğer menü öğeleri herkes görebilir
     return true;
-  });
+  };
+  const filterMenuItems = (items) => items.filter(canSeeItem).map((item) => {
+    if (!item.children) return item;
+    return { ...item, children: filterMenuItems(item.children) };
+  }).filter((item) => !item.children || item.children.length > 0);
+  const filteredMenuItems = filterMenuItems(Menuitems);
   return (
     <Box sx={{ px: 3 }}>
       <List sx={{ pt: 0 }} className="sidebarNav">

@@ -21,11 +21,11 @@ export default function EntrepreneurApplicationSummary({ application, form, user
     <summary className={styles.summaryCard}>
       <span className={styles.summaryRow}>
         <span className={styles.summaryField}><span>Başvuran</span><strong>{applicant}</strong></span>
-        <span className={`${styles.summaryField} ${styles.summaryTitle}`}><span>Girişim</span><strong>{title}</strong></span>
+        <span className={styles.summaryField}><span>Girişim</span><strong>{title}</strong></span>
         <span className={styles.summaryField}><span>Gönderim tarihi</span>{validDate ? <time dateTime={date.toISOString()}>{date.toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</time> : <span>Tarih bilgisi bulunamadı</span>}</span>
         <span className={`${styles.statusBadge} ${styles[status.tone]}`} role="status"><i className={`bi ${status.icon}`} aria-hidden="true" />{status.label}</span>
+        <span className={styles.summaryToggle}><span className={styles.showDetails}>Detayları görüntüle</span><span className={styles.hideDetails}>Detayları gizle</span><i className="bi bi-chevron-down" aria-hidden="true" /></span>
       </span>
-      <span className={styles.summaryToggle}><span className={styles.showDetails}>Detayları görüntüle</span><span className={styles.hideDetails}>Detayları gizle</span><i className="bi bi-chevron-down" aria-hidden="true" /></span>
     </summary>
     <div className={styles.applicationDetails}>{children}</div>
   </details>;

@@ -4,6 +4,7 @@ import { entrepreneurAPI } from '@/lib/api';
 import { readDraft, storeDraft, clearDraft, canRestoreDraft } from '@/lib/entrepreneurDraft';
 import SearchableSelect from '@/components/SearchableSelect';
 import EntrepreneurApplicationSummary from '@/components/EntrepreneurApplicationSummary';
+import EntrepreneurAgreementDialog from '@/components/EntrepreneurAgreementDialog';
 import styles from '@/styles/entrepreneur.module.css';
 
 function answered(question, answers, documents) {
@@ -30,10 +31,30 @@ export default function EntrepreneurApplicationForm() {
   const [retry, setRetry] = useState(0);
   const [autoSavePaused, setAutoSavePaused] = useState(false);
   const [recoveryDraft, setRecoveryDraft] = useState(null);
+  const [selectedAgreement, setSelectedAgreement] = useState(null);
   const answersRef = useRef({});
   const applicationRef = useRef(null);
   const operation = useRef(false);
   const mounted = useRef(false);
+  const formCardRef = useRef(null);
+  const sectionHeadingRef = useRef(null);
+  const scrollToSection = useRef(false);
+
+  useEffect(() => {
+    if (!scrollToSection.current) return;
+    scrollToSection.current = false;
+    sectionHeadingRef.current?.focus({ preventScroll: true });
+    formCardRef.current?.scrollIntoView({
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+      block: 'start',
+    });
+  }, [step]);
+
+  function goToStep(nextStep) {
+    if (nextStep === step) return;
+    scrollToSection.current = true;
+    setStep(nextStep);
+  }
 
   useEffect(() => {
     mounted.current = true;
@@ -270,7 +291,7 @@ export default function EntrepreneurApplicationForm() {
               const required = fields.filter(question => question.required);
               const count = required.filter(question => answered(question, answers, documents)).length;
               const invalid = fields.some(question => errors[question.id]);
-              return <button key={section.id} type="button" disabled={!!busy} onClick={() => setStep(index)} className={`${styles.step} ${step === index ? styles.activeStep : ''} ${invalid ? styles.invalidStep : ''}`} aria-current={step === index ? 'step' : undefined}>
+              return <button key={section.id} type="button" disabled={!!busy} onClick={() => goToStep(index)} className={`${styles.step} ${step === index ? styles.activeStep : ''} ${invalid ? styles.invalidStep : ''}`} aria-current={step === index ? 'step' : undefined}>
                 <span className={styles.stepNumber}>{required.length > 0 && count === required.length ? <i className="bi bi-check-lg" /> : index + 1}</span>
                 <span><strong>{section.title}</strong><small>{required.length ? `${count}/${required.length} zorunlu alan tamamlandı` : 'İsteğe bağlı alanlar'}</small></span>
               </button>;
@@ -279,8 +300,8 @@ export default function EntrepreneurApplicationForm() {
           <div className={styles.savedStatus} role="status">{busy ? 'İşlem sürüyor...' : submitted ? 'Başvuru gönderildi' : dirty ? 'Kaydedilmemiş değişiklikler var' : application ? `Son kayıt: ${new Date(application.updatedAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}` : 'Henüz taslak kaydedilmedi'}</div>
         </aside>
 
-        <form className={styles.formCard} noValidate onSubmit={event => { event.preventDefault(); if (!submitted) save(true); }}>
-          <div className={styles.sectionHeading}><span>BÖLÜM {step + 1} / {sections.length}</span><h2>{currentSection?.title}</h2><p>{currentSection?.description} {currentQuestions.some(question => question.required) && <span>* Zorunlu alan</span>}</p></div>
+        <form ref={formCardRef} className={styles.formCard} noValidate onSubmit={event => { event.preventDefault(); if (!submitted) save(true); }}>
+          <div className={styles.sectionHeading}><span>BÖLÜM {step + 1} / {sections.length}</span><h2 ref={sectionHeadingRef} tabIndex={-1}>{currentSection?.title}</h2><p>{currentSection?.description} {currentQuestions.some(question => question.required) && <span>* Zorunlu alan</span>}</p></div>
           {currentQuestions.map(question => {
             const questionDocuments = documents.filter(document => document.questionId === question.id);
             const value = answers[question.id] || (question.type === 'multipleChoice' ? [] : '');
@@ -331,22 +352,23 @@ export default function EntrepreneurApplicationForm() {
           })}
           {step === sections.length - 1 && !!form.agreements?.length && <div className={styles.legalAgreements} aria-label="Gizlilik ve kullanım onayları">
             {form.agreements.map(agreement => <div key={agreement.id} id={`question-${agreement.id}`}>
-              <label className={styles.consentLabel}>
-                <input id={`answer-${agreement.id}`} type="checkbox" checked={answers[agreement.id] === true} disabled={locked} aria-required="true" aria-invalid={!!errors[agreement.id]} aria-describedby={errors[agreement.id] ? `error-${agreement.id}` : undefined} onChange={event => changeAnswer(agreement.id, event.target.checked)} />
-                <span><a href={agreement.url} target="_blank" rel="noopener noreferrer">{agreement.label}</a> metnini okudum ve kabul ediyorum. <b aria-label="zorunlu">*</b></span>
-              </label>
+              <div className={styles.consentLabel}>
+                <input id={`answer-${agreement.id}`} type="checkbox" checked={answers[agreement.id] === true} disabled={locked} aria-label={`${agreement.label} metnini okudum ve kabul ediyorum.`} aria-required="true" aria-invalid={!!errors[agreement.id]} aria-describedby={errors[agreement.id] ? `error-${agreement.id}` : undefined} onChange={event => changeAnswer(agreement.id, event.target.checked)} />
+                <span className={styles.agreementCopy}><button type="button" className={styles.legalLink} aria-haspopup="dialog" onClick={() => setSelectedAgreement(agreement)}>{agreement.label}</button>{' '}<label htmlFor={`answer-${agreement.id}`}>metnini okudum ve kabul ediyorum. <b aria-label="zorunlu">*</b></label></span>
+              </div>
               {errors[agreement.id] && <p className={styles.fieldError} id={`error-${agreement.id}`}>{errors[agreement.id]}</p>}
             </div>)}
-            {!submitted && <p className={styles.questionHelp}>Başvuruyu göndermek için yukarıdaki onayları işaretleyin. Metinler yeni sekmede açılır.</p>}
+            {!submitted && <p className={styles.questionHelp}>Metinleri başlıklarına tıklayarak bu ekranda okuyabilirsiniz. Başvuruyu göndermek için yukarıdaki onayları işaretleyin.</p>}
           </div>}
           <div className={styles.actions}>
-            <button type="button" className={styles.secondaryButton} disabled={step === 0 || !!busy} onClick={() => setStep(value => value - 1)}><i className="bi bi-arrow-left" /> Geri</button>
+            <button type="button" className={styles.secondaryButton} disabled={step === 0 || !!busy} onClick={() => goToStep(step - 1)}><i className="bi bi-arrow-left" /> Geri</button>
             {!submitted && <button type="button" className={styles.saveButton} disabled={!!busy || !!recoveryDraft} onClick={() => save(false)}>{busy === 'save' ? 'Kaydediliyor...' : 'Taslağı Kaydet'}</button>}
-            {step < sections.length - 1 ? <button type="button" className={styles.primaryButton} disabled={!!busy} onClick={() => { setStep(value => value + 1); document.getElementById('entrepreneur-form-top')?.scrollIntoView({ behavior: 'smooth' }); }}>Devam Et <i className="bi bi-arrow-right" /></button> : !submitted && <button type="submit" className={styles.primaryButton} disabled={!!busy || !!recoveryDraft || consentMissing}>{busy === 'submit' ? 'Gönderiliyor...' : 'Başvuruyu Gönder'} <i className="bi bi-send" /></button>}
+            {step < sections.length - 1 ? <button type="button" className={styles.primaryButton} disabled={!!busy} onClick={() => goToStep(step + 1)}>Devam Et <i className="bi bi-arrow-right" /></button> : !submitted && <button type="submit" className={styles.primaryButton} disabled={!!busy || !!recoveryDraft || consentMissing}>{busy === 'submit' ? 'Gönderiliyor...' : 'Başvuruyu Gönder'} <i className="bi bi-send" /></button>}
           </div>
         </form>
       </div>
       </ApplicationView>
+      {selectedAgreement && <EntrepreneurAgreementDialog key={selectedAgreement.id} agreement={selectedAgreement} onClose={() => setSelectedAgreement(null)} />}
     </div>
   );
 }
