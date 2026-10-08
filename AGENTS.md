@@ -1,5 +1,13 @@
 # Ideathon — agent devir notu
 
+## 8 Ekim 2026 — yayın kimliği/geçmişi ve taslak sürüm göstergeleri
+
+Soru setinde Yayında alanı, taslak listesinde yayın işareti, taslak/sürüm adını ve yerine geçeceği yayını gösteren onay, sayfalı Yayın Geçmişi eklendi. Güncel yayın metaverisi settings.publication içinde; eski yayın metaverisi yeni yayın öncesi EntrepreneurFormPublication koleksiyonuna arşivlenir. Global revizyon CAS kontrolü ve eski yayın uçları korunur; kaynağı tutulmamış eski yayına tahmini taslak/sürüm atanmaz. Taslak yeniden adlandırma, düzenleme ve silme yayındaki kaynak adını/sürümünü değiştirmez. Yeni GET /api/entrepreneurs/admin/form/publications yalnızca süperadmine açıktır. Şema geriye uyumludur, mevcut içerik için toplu geçiş yapılmadı.
+
+Üst kart Kaynak: Sürüm N gösterir; geçmişten açılınca Son kayıt ve kaydedilecek yeni sürüm ayrıca görünür. Kaynak bilgisi düzenlemeye başlayınca kaybolmaz. İçerik değişmediyse yeni sürüm seçeneği kapalı, ayrı kopya açık kalır; API de eşdeğer içerikte kayıt tarihini ve revizyonu artırmaz. Yanıltıcı kaydedildi mesajı kaldırıldı.
+
+Doğrulama: API 33/33 test ve genişletilmiş verify:entrepreneur-draft-versions izole veritabanında no-op kayıt, yayın kimliği/geçmişi, eşzamanlı yayın, sayfalama, kaynak düzenleme/silme koruması ve eski yayın uyumluluğuyla geçti. verify:entrepreneur-drafts gerçek editör ve yalnızca bellekteki API ile yayın onayı/göstergesi/geçmişi, eski/güncel/yeni sürüm etiketleri, değişmeyen kayıtta kopyalama, mevcut tam taslak/sıralama/önizleme akışlarıyla geçti. Gerçek yeni uçta süperadmin 200/kullanıcı 403, soru seti sayfası 200 doğrulandı; gerçek girişimci belgeleri işlem öncesi içerik özetleriyle birebir korundu. API yeniden başlatıldı. Gerçek taslak kaydı veya yayımlama yapılmadı; production build/push yapılmadı. Önceki kaynaklar .local/ui-checkpoints/draft-publication-and-version-status/ içinde Git dışında korunur.
+
 ## 8 Ekim 2026 — form başlıklarını üst kartta düzenleme
 
 Ayrı Form bilgileri kartı ve Form açıklaması alanı kaldırıldı. Taslak adı üst kontrol kartında ana başlık; form başlığı hemen altında küçük yazıyla gösterilir. Her satırdaki kalem simgesi yerinde düzenlemeyi açar. Enter/alan dışına tıklama düzenlemeyi tamamlar; Escape o düzenleme başlangıcındaki değeri geri getirir. Formu Kaydet mevcut sürüm/kopya akışını kullanır. Mevcut description verileri silinmedi; düzenleme alanı kaldırıldı. Yeni boş taslak taslak adı alanına odaklanır.

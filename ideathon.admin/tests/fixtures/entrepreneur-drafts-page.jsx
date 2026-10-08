@@ -29,6 +29,8 @@ export default function DraftLibraryTest() {
       { _id: 'b', name: 'İkinci taslak', form: { ...copy(form), title: 'İkinci form' }, revision: 0, createdAt: '2026-10-06T09:00:00Z', updatedAt: '2026-10-06T10:00:00Z' },
     ];
     const versions = new Map();
+    const publications = [];
+    let saves = 0;
     let settings = { active: copy(form), draft: copy(form), revision: 10 };
     const originals = { ...entrepreneurAdminAPI };
     const oldConfirm = window.confirm;
@@ -46,6 +48,7 @@ export default function DraftLibraryTest() {
       drafts.push(draft); return copy(draft);
     };
     entrepreneurAdminAPI.saveFormDraft = async (id, name, draftForm, revision) => {
+      saves++;
       const draft = drafts.find(item => item._id === id);
       if (saveConflict || draft.revision !== revision) conflict();
       versions.set(`${id}:${revision}`, copy(draft));
@@ -63,8 +66,15 @@ export default function DraftLibraryTest() {
     entrepreneurAdminAPI.publishFormDraft = async (id, revision, settingsRevision) => {
       const draft = drafts.find(item => item._id === id);
       if (draft.revision !== revision || settingsRevision !== settings.revision) conflict();
-      settings = { ...settings, active: copy(draft.form), revision: settings.revision + 1 };
+      const publishedAt = new Date().toISOString();
+      if (settings.publication) publications.unshift(copy(settings.publication));
+      const publication = { _id: `qa-${settings.revision + 1}`, draftId: id, draftName: draft.name, draftRevision: revision, title: draft.form.title, publishedAt };
+      settings = { ...settings, active: copy(draft.form), revision: settings.revision + 1, publishedAt, publication };
       return { settings: copy(settings), draft: copy(draft) };
+    };
+    entrepreneurAdminAPI.formPublications = async () => {
+      const items = [...(settings.publication ? [{ ...copy(settings.publication), isCurrent: true }] : []), ...publications.map(item => ({ ...copy(item), isCurrent: false }))];
+      return { items, pagination: { page: 1, pages: 1, total: items.length } };
     };
     const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
     const assert = (condition, message) => { if (!condition) throw new Error(message); };
@@ -119,6 +129,13 @@ export default function DraftLibraryTest() {
       await wait(() => open('İkinci taslak'), 'Taslaklar listelenmedi');
       open('İkinci taslak').click();
       await wait(() => fieldValue('Form başlığı') === 'İkinci form' && !document.querySelector('[role="dialog"]'), 'Geçmiş taslak yüklenmedi');
+      const savesBeforeUnchanged = saves;
+      button('Formu Kaydet').click(); await wait(() => document.querySelector('input[value=version]'), 'Değişmeyen taslak kayıt seçenekleri açılmadı');
+      assert(document.querySelector('input[value=version]').disabled, 'Değişiklik yokken yeni sürüm seçeneği açık');
+      assert(document.querySelector('input[value=copy]').checked && !document.querySelector('input[value=copy]').disabled, 'Değişmeyen taslak ayrı kopya oluşturamıyor');
+      assert(document.querySelector('[role=dialog]').textContent.includes('Kaydedilecek değişiklik yok.'), 'Değişiklik yok bilgisi gösterilmedi');
+      button('Vazgeç').click(); await wait(() => !document.querySelector('[role=dialog]'), 'Kayıt penceresi kapanmadı');
+      assert(saves === savesBeforeUnchanged && drafts[1].revision === 0, 'Değişmeyen taslak yeni sürüm oluşturdu');
       await type('Form başlığı', 'Kopyaya ait form');
       button('Formu Kaydet').click();
       await wait(() => document.querySelector('input[value=copy]'), 'Kayıt seçenekleri açılmadı');
@@ -132,7 +149,7 @@ export default function DraftLibraryTest() {
       await type('Taslak adı', 'Üçüncü taslak güncel');
       await type('Form başlığı', 'Kaydedilecek başlık');
       await saveCurrent();
-      await wait(() => drafts[2].form.title === 'Kaydedilecek başlık' && !button('Formu Kaydet').disabled, 'Seçili taslak kaydedilmedi');
+      await wait(() => drafts[2].form.title === 'Kaydedilecek başlık' && button('Formu Kaydet')?.disabled === false, 'Seçili taslak kaydedilmedi');
       await type('Form başlığı', 'Kaydedilmemiş başlık');
       button('Taslaklarım').click();
       await wait(() => open('Birinci taslak'), 'Taslak listesi tekrar açılmadı');
@@ -187,7 +204,7 @@ export default function DraftLibraryTest() {
       assert(drafts[2].revision === previousRevision, 'Hatalı seçenekler sunucuya kaydedildi');
       await type('Seçenekler', '  Ürün  \nHizmet\n');
       await saveCurrent();
-      await wait(() => drafts[2].revision > previousRevision && !button('Formu Kaydet').disabled && !button('Bölümü düzenle')?.matches(':disabled'), 'Yeni alan kaydedilmedi');
+      await wait(() => drafts[2].revision > previousRevision && button('Formu Kaydet')?.disabled === false && !button('Bölümü düzenle')?.matches(':disabled'), 'Yeni alan kaydedilmedi');
       const custom = drafts[2].form.questions.find(q => q.label === 'Uyarlanabilir alan');
       assert(custom.type === 'singleChoice' && !Object.hasOwn(custom, 'inputType') && !Object.hasOwn(custom, 'maxFiles'), 'Biçim değişiminde eski ayarlar kaldı');
       assert(custom.required === true, 'Zorunluluk ayarı kayboldu');
@@ -267,7 +284,8 @@ export default function DraftLibraryTest() {
       const activeBeforeConfirmation = JSON.stringify(settings.active);
       button('Yayımla').click();
       await wait(() => button('Kaydet'), 'Yayım öncesi kayıt seçimi açılmadı'); button('Kaydet').click();
-      await wait(() => document.querySelector('[role="dialog"]')?.textContent.includes('Bu işlemi onaylarsanız mevcut soru seti girişimcilerle yayımlanacak.'), 'Yayımlama son onayı açılmadı');
+      await wait(() => document.querySelector('[role="dialog"]')?.textContent.includes('Bu sürüm yayımlanacak ve yeni başvurularda kullanılacak.'), 'Yayımlama son onayı açılmadı');
+      assert(document.querySelector('[role=dialog]').textContent.includes(`Üçüncü taslak güncel · Sürüm ${drafts[2].revision + 1}`), 'Yayımlanacak taslak/sürüm açıkça gösterilmedi');
       assert(JSON.stringify(settings.active) === activeBeforeConfirmation, 'Onay verilmeden soru seti yayımlandı');
       button('Vazgeç').click();
       await wait(() => !document.querySelector('[role="dialog"]'), 'Yayımlama onayı kapanmadı');
@@ -283,6 +301,9 @@ export default function DraftLibraryTest() {
       assert(!settings.active.sections.some(s => s.title === 'Boş bölüm'), 'Silinen bölüm yayıma ulaştı');
       assert(drafts[0].form.title === 'İlk form' && drafts[1].form.title === 'İkinci form', 'Diğer taslaklar değişti');
       await wait(() => !document.querySelector('[role="dialog"]'), 'Yayım penceresi kapanmadı');
+      assert(document.querySelector('[aria-label="Yayımdaki soru seti"]').textContent.includes(`Üçüncü taslak güncel · Sürüm ${drafts[2].revision + 1}`), 'Yayın kimliği görünmüyor');
+      button('Yayın Geçmişi').click(); await wait(() => document.querySelector('[role=dialog]')?.textContent.includes('Üçüncü taslak güncel'), 'Yayın geçmişi gösterilmedi');
+      button('Kapat').click(); await wait(() => !document.querySelector('[role=dialog]'), 'Yayın geçmişi kapanmadı');
       button('Yeni Taslak').click(); await wait(() => fieldValue('Taslak adı') === '', 'Boş taslak başlamadı');
       assert(!document.querySelector('[data-question-id]'), 'Yeni taslak eski soruları içeriyor');
       await type('Taslak adı', 'Sıfırdan test'); await type('Form başlığı', 'Boş formdan kurulan');
@@ -296,9 +317,26 @@ export default function DraftLibraryTest() {
       button('Sürüm Geçmişi').click(); await wait(() => document.querySelector('[role="dialog"]')?.textContent.includes('Sürüm 1'), 'Sürüm geçmişi yok');
       const versionButtons = [...document.querySelectorAll('[role="dialog"] button')].filter(node => node.textContent === 'Düzenlemeye al');
       versionButtons.at(-1).click(); await wait(() => !document.querySelector('[role="dialog"]') && document.querySelectorAll('[data-question-id]').length === 1, 'Eski sürüm düzenlemeye alınmadı');
+      const toolbar = () => document.querySelector('[aria-label="Form kayıt ve yayın işlemleri"]').textContent;
+      assert(toolbar().includes('Kaynak: Sürüm 1') && toolbar().includes('Son kayıt: Sürüm 2') && toolbar().includes('Sürüm 3 oluşacak'), 'Geçmiş kaynağı/son kayıt/yeni sürüm birbirinden ayrılmadı');
+      document.querySelector('button[aria-label="Yeni ilk soru sorusunu düzenle"]').click();
+      await type('Soru metni', 'Geçmiş sürümde düzenlenen soru');
+      assert(toolbar().includes('Kaynak: Sürüm 1'), 'Düzenlemeye başlayınca kaynak sürümü kayboldu');
       await saveCurrent(); await wait(() => drafts[3].revision === 2 && !document.querySelector('[role="dialog"]'), 'Eski sürüm yeni kayıt olarak saklanmadı');
+      assert(toolbar().includes('Kaynak: Sürüm 3') && !toolbar().includes('Son kayıt: Sürüm 2'), 'Kayıttan sonra kaynak sürümü güncellenmedi');
       assert(versions.get('d:1').form.questions.filter(q => q.type !== 'consent').length === 2, 'Eski sürümü açma yeni içeriği kaybettirdi');
-      setResult('PASS: draft library, opening old drafts, named copy, independent save, rename, unsaved-change cancellation, reload, conflict recovery, selected-draft publication, dynamic sections/questions, all answer formats, preview, validation, pointer/keyboard section sorting, cancelled drag, synchronized content, saved order after reopening, ordering and deletion');
+      button('Yayımla').click(); await wait(() => button('Onayla ve Yayımla'), 'İkinci taslak yayın onayı yok');
+      button('Onayla ve Yayımla').click(); await wait(() => settings.publication?.draftId === 'd' && !document.querySelector('[role=dialog]'), 'İkinci taslak yayımlanmadı');
+      await type('Taslak adı', 'Yayımdan sonra adı değişti'); await saveCurrent();
+      await wait(() => drafts[3].revision === 3 && !document.querySelector('[role=dialog]'), 'Yayımdan sonraki düzenleme kaydedilmedi');
+      assert(document.querySelector('[aria-label="Yayımdaki soru seti"]').textContent.includes('Sıfırdan test · Sürüm 3'), 'Taslak yeniden adlandırılınca yayın kimliği değişti');
+      button('Taslaklarım').click(); await wait(() => open('Yayımdan sonra adı değişti'), 'Yayımlanan taslak listelenmedi');
+      assert(document.querySelector('[role=dialog]').textContent.includes('Yayında · Sürüm 3'), 'Listede yayındaki eski sürüm işareti yok');
+      button('Kapat').click(); await wait(() => !document.querySelector('[role=dialog]'), 'Taslak listesi kapanmadı');
+      button('Yayın Geçmişi').click(); await wait(() => document.querySelector('[role=dialog]')?.textContent.includes('Üçüncü taslak güncel'), 'Önceki yayın geçmişte korunmadı');
+      assert(document.querySelector('[role=dialog]').textContent.includes('Sıfırdan test · Sürüm 3'), 'Yeni yayının kaynak adı korunmadı');
+      button('Kapat').click();
+      setResult('PASS: publication identity/history and source preservation, historical source/current/next version labels, unchanged-save prevention with independent copy, draft library, opening old drafts, named copy, independent save, rename, unsaved-change cancellation, reload, conflict recovery, selected-draft publication, dynamic sections/questions, all answer formats, preview, validation, pointer/keyboard section sorting, cancelled drag, synchronized content, saved order after reopening, ordering and deletion');
     })().catch(error => { if (!cancelled) setResult(`FAIL: ${stage}: ${error.message}\n${error.stack}`); });
     return () => { cancelled = true; Object.assign(entrepreneurAdminAPI, originals); window.confirm = oldConfirm; };
   }, []);

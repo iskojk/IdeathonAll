@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const { authenticate, requireSuperAdminOrAdmin, requireSuperAdmin } = require('../middleware/auth');
-const { getSettings, updateSettings } = require('../services/entrepreneurFormSettings');
+const { getSettings, updateSettings, listPublications } = require('../services/entrepreneurFormSettings');
 const drafts = require('../services/entrepreneurFormDrafts');
 const controller = require('../controllers/entrepreneurAdminController');
 
@@ -25,6 +25,9 @@ router.put('/form', requireSuperAdmin, async (req, res) => {
 });
 router.post('/form/publish', requireSuperAdmin, async (req, res) => {
   res.json({ success: true, data: await updateSettings(req.body, req.user._id, true) });
+});
+router.get('/form/publications', requireSuperAdmin, async (req, res) => {
+  res.json({ success: true, data: await listPublications(req.query) });
 });
 router.get('/form/drafts', requireSuperAdmin, async (req, res) => {
   res.json({ success: true, data: await drafts.listDrafts(req.query) });

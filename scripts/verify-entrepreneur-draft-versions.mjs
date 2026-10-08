@@ -14,6 +14,7 @@ const Version = r('./src/models/EntrepreneurFormDraftVersion');
 const Draft = r('./src/models/EntrepreneurFormDraft');
 try {
   const initial = await settings.getSettings();
+  assert.equal((await settings.listPublications()).items.length, 0);
   const consent = initial.active.questions.find(q => q.id === 'kvkk_ack');
   const blank = { ...structuredClone(initial.active), sections: initial.active.sections.filter(s => s.id === consent.section), questions: [consent] };
   let empty = await drafts.saveDraft(null, { name: 'Boş taslak', form: blank });
@@ -28,6 +29,9 @@ try {
     consent,
   ] };
   let draft = await drafts.saveDraft(null, { name: 'İlk form', form });
+  const unchanged = await drafts.saveDraft(draft._id, { name: draft.name, form: draft.form, revision: draft.revision });
+  assert.deepEqual(unchanged, draft, 'Aynı içerik tarih veya sürüm artırmamalı.');
+  assert.equal(await Version.countDocuments({ draftId: draft._id }), 0);
   const original = structuredClone(draft);
   const reordered = { ...form, questions: [form.questions[2], form.questions[0], form.questions[3], form.questions[1], consent] };
   draft = await drafts.saveDraft(draft._id, { name: 'Güncel form', form: reordered, revision: draft.revision });
@@ -61,12 +65,18 @@ try {
   await assert.rejects(drafts.saveDraft(draft._id, { name: 'Eski yazma', form: draft.form, revision: 0 }), error => error.status === 409);
   const activeBefore = await settings.getSettings(); assert.deepEqual(activeBefore, initial);
   const published = await drafts.publishDraft(draft._id, { revision: draft.revision, settingsRevision: initial.revision });
+  assert.equal(String(published.settings.publication.draftId), String(draft._id));
+  assert.equal(published.settings.publication.draftName, draft.name);
+  assert.equal(published.settings.publication.draftRevision, draft.revision);
+  assert.equal(published.settings.publication.formVersion, published.settings.active.version);
+  assert.equal((await settings.listPublications()).items.length, 1);
   const active = structuredClone(published.settings.active);
   draft = await drafts.saveDraft(draft._id, { name: 'Yayımdan sonra', form: { ...draft.form, title: 'Yayımlanmamış başlık' }, revision: draft.revision });
   assert.deepEqual((await settings.getSettings()).active, active);
+  assert.deepEqual((await settings.getSettings()).publication, published.settings.publication, 'Düzenleme/yeniden adlandırma yayın kimliğini değiştirmemeli.');
   await assert.rejects(drafts.publishDraft(draft._id, { revision: 0, settingsRevision: published.settings.revision }), error => error.status === 409);
   const legacy = await Draft.create({ name: 'Geçmişi olmayan eski taslak', revision: 5, form: original.form });
-  await drafts.saveDraft(legacy._id, { name: legacy.name, form: legacy.form, revision: 5 });
+  await drafts.saveDraft(legacy._id, { name: `${legacy.name} güncel`, form: legacy.form, revision: 5 });
   assert.deepEqual((await drafts.listVersions(legacy._id)).items.map(item => item.revision), [6, 5]);
   // Removing a draft only changes its library visibility; publication and
   // version snapshots remain independent and can be recovered without renumbering.
@@ -99,6 +109,44 @@ try {
   await drafts.listDrafts();
   assert.equal(await Draft.countDocuments({ legacyKey: 'entrepreneur' }), 1, 'Silinen eski çalışma taslağı yeniden oluşturulmamalı.');
   assert((await Draft.findById(importedLegacy._id).lean()).deletedAt);
+  // Switching publications preserves immutable source metadata, even after a
+  // source draft is deleted; rejected races must never appear as publications.
+  const switched = await drafts.publishDraft(copied._id, { revision: copied.revision, settingsRevision: settingsBeforeDelete.revision });
+  let publications = await settings.listPublications();
+  assert.equal(publications.items.length, 2);
+  assert.equal(publications.items[0].isCurrent, true);
+  assert.equal(String(publications.items[0].draftId), String(copied._id));
+  assert.equal(String(publications.items[1].draftId), String(draft._id));
+  assert.equal(publications.items[1].draftName, published.settings.publication.draftName);
+  await drafts.deleteDraft(copied._id, { revision: copied.revision });
+  assert.deepEqual((await settings.getSettings()).publication, switched.settings.publication);
+  assert.deepEqual(await settings.listPublications(), publications);
+  const concurrent = await Promise.allSettled([draft, empty].map(item => drafts.publishDraft(item._id, { revision: item.revision, settingsRevision: switched.settings.revision })));
+  assert.equal(concurrent.filter(result => result.status === 'fulfilled').length, 1);
+  // Empty forms fail validation before publication; the saved active event and
+  // archive must still contain exactly the three committed publications.
+  assert.equal(concurrent.find(result => result.status === 'rejected').reason.status, 422);
+  publications = await settings.listPublications();
+  assert.equal(publications.pagination.total, 3);
+  const currentSettings = await settings.getSettings();
+  const competitors = await Promise.allSettled(['A', 'B'].map(() => drafts.publishDraft(draft._id, { revision: draft.revision, settingsRevision: currentSettings.revision })));
+  assert.equal(competitors.filter(result => result.status === 'fulfilled').length, 1);
+  assert.equal(competitors.find(result => result.status === 'rejected').reason.status, 409);
+  assert.equal((await settings.listPublications()).pagination.total, 4);
+  for (let i = 0; i < 10; i++) {
+    const latest = await settings.getSettings();
+    await drafts.publishDraft(draft._id, { revision: draft.revision, settingsRevision: latest.revision });
+  }
+  const publicationPageOne = await settings.listPublications(), publicationPageTwo = await settings.listPublications({ page: '2' });
+  assert.equal(publicationPageOne.items.length, 12); assert.equal(publicationPageTwo.items.length, 2);
+  assert.equal(new Set([...publicationPageOne.items, ...publicationPageTwo.items].map(item => item._id)).size, 14);
+  await assert.rejects(settings.listPublications({ page: ['1'] }), error => error.status === 400);
+  const beforeLegacyPublish = await settings.getSettings();
+  await settings.updateSettings({ form: draft.form, revision: beforeLegacyPublish.revision }, undefined, true);
+  assert.equal((await settings.getSettings()).publication.draftId, undefined, 'Eski yayın ucu önceki taslağa bağlıymış gibi görünmemeli.');
+  const legacyPublication = settings.currentPublication({ ...initial, publishedAt: new Date('2026-01-01'), active });
+  assert.equal(legacyPublication.draftId, undefined, 'Kaynağı tutulmamış eski yayına taslak atanmamalı.');
+  console.log('OK: Yayın kimliği/geçmişi, taslak değişiminde kaynak koruması, silinen kaynağın yayında kalması, eşzamanlı 409, sayfalama, eski yayın uyumluluğu ve değişmeyen kayıtta sürüm/tarih koruması geçti.');
   console.log('OK: Form silme/geri alma, sürüm ve yayım koruması, silinen forma yazma/yayım retleri ve eski taslağın tekrar oluşturulmaması geçti.');
   console.log('OK: Boş taslak, dört cevap formatı, soru sırası, ayrı kopya, sürüm geçmişi/yeniden düzenleme, sayfalama, eşzamanlı kayıt ve yayım izolasyonu geçti.');
 } finally {

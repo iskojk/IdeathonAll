@@ -4,6 +4,7 @@ const base = '/entrepreneurs/admin';
 
 export const entrepreneurAdminAPI = {
   form: async signal => (await api.get(`${base}/form`, { signal })).data.data,
+  formPublications: async (page = 1) => (await api.get(`${base}/form/publications`, { params: { page } })).data.data,
   saveForm: async (form, revision) => (await api.put(`${base}/form`, { form, revision })).data.data,
   publishForm: async (form, revision) => (await api.post(`${base}/form/publish`, { form, revision })).data.data,
   formDrafts: async (page = 1, signal, view = 'active') => (await api.get(`${base}/form/drafts`, { params: { page, view }, signal })).data.data,

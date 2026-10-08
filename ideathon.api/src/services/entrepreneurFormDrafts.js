@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { isDeepStrictEqual } = require('node:util');
 const Draft = require('../models/EntrepreneurFormDraft');
 const Version = require('../models/EntrepreneurFormDraftVersion');
 const { getSettings, validateForm, updateSettings } = require('./entrepreneurFormSettings');
@@ -60,6 +61,7 @@ async function saveDraft(id, input = {}, userId) {
   if (!id) return (await Draft.create({ ...changes, createdBy: userId })).toObject();
   const current = await getDraft(id);
   if (current.revision !== input.revision) conflict();
+  if (current.name === changes.name && isDeepStrictEqual(validateForm(current.form), changes.form)) return current;
   // Preserve the outgoing snapshot before advancing the draft. This also works
   // on standalone MongoDB: a failed write cannot destroy an older version.
   await Version.init();
@@ -124,7 +126,7 @@ async function publishDraft(id, input = {}, userId) {
   if (draft.revision !== input.revision) conflict();
   // Publish this saved snapshot. An edit saved afterwards remains an unpublished
   // draft; the active form never references a mutable library document.
-  const settings = await updateSettings({ form: draft.form, revision: input.settingsRevision }, userId, true);
+  const settings = await updateSettings({ form: draft.form, revision: input.settingsRevision }, userId, true, draft);
   return { settings, draft };
 }
 

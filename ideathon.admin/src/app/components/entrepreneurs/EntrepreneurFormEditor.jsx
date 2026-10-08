@@ -39,6 +39,7 @@ export default function EntrepreneurFormEditor() {
   const [removeSection, setRemoveSection] = useState(null);
   const [removeId, setRemoveId] = useState(null);
   const [selectedDraft, setSelectedDraft] = useState(null);
+  const [sourceRevision, setSourceRevision] = useState(null);
   const [draftName, setDraftName] = useState('');
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [library, setLibrary] = useState(null);
@@ -54,10 +55,17 @@ export default function EntrepreneurFormEditor() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [history, setHistory] = useState(null);
   const [historyError, setHistoryError] = useState('');
+  const [publicationsOpen, setPublicationsOpen] = useState(false);
+  const [publications, setPublications] = useState(null);
+  const [publicationsError, setPublicationsError] = useState('');
   const dirty = !!form && JSON.stringify({ name: draftName, form }) !== saved;
+  const publication = settings?.publication;
+  const publicationLabel = item => item?.draftId ? `${item.draftName} · Sürüm ${item.draftRevision + 1}` : item?.title || settings?.active.title;
+  const isPublishedDraft = draft => !!publication?.draftId && String(publication.draftId) === String(draft?._id);
 
   function adoptDraft(draft, preservePosition = false) {
     setSelectedDraft(draft); setDraftName(draft.name); setForm(copy(draft.form)); setEditingHeading(null);
+    setSourceRevision(draft.revision);
     setSaved(JSON.stringify({ name: draft.name, form: draft.form })); setValidationIssue(null);
     if (!preservePosition || !draft.form.questions.some(q => q.id === expanded)) setExpanded(null);
     if (!preservePosition || !draft.form.sections.some(s => s.id === activeSection)) setActiveSection(draft.form.sections.find(s => s.id !== draft.form.questions.find(q => q.id === 'kvkk_ack')?.section)?.id || '');
@@ -194,6 +202,7 @@ export default function EntrepreneurFormEditor() {
     const blank = { ...base, title: 'Girişimci Başvurusu', description: '', sections: [{ id: consent.section, title: 'Gizlilik ve Kullanım Onayları', description: '' }], questions: [consent] };
     delete blank.version;
     setSelectedDraft(null); setDraftName(''); setForm(blank); setSaved('');
+    setSourceRevision(null);
     setActiveSection(''); setExpanded(null); setEditingHeading('name'); setHeadingBeforeEdit(''); setValidationIssue(null); setError('');
     setNotice('Boş taslağınız hazır. Taslağa ad verin, ilk bölümünüzü ve sorularınızı ekleyin.');
   }
@@ -226,7 +235,7 @@ export default function EntrepreneurFormEditor() {
   function beginSave(publish = false) {
     try { preparedForm(); } catch (issue) { revealIssue(issue); return; }
     if (publish && selectedDraft && !dirty) { setError(''); setPublishConfirm(true); return; }
-    setSaveMode(selectedDraft ? 'version' : 'copy');
+    setSaveMode(selectedDraft && dirty ? 'version' : 'copy');
     setNewName(selectedDraft ? `${draftName.slice(0, 140)} — Kopya` : draftName);
     setCreateError(''); setPublishAfterSave(publish); setCreateOpen(true);
   }
@@ -251,6 +260,7 @@ export default function EntrepreneurFormEditor() {
     try {
       const { draft, version } = await entrepreneurAdminAPI.formDraftVersion(selectedDraft._id, revision);
       adoptDraft(draft); setForm(copy(version.form)); setDraftName(version.name);
+      setSourceRevision(version.revision);
       setActiveSection(version.form.sections.find(s => s.id !== version.form.questions.find(q => q.id === 'kvkk_ack').section)?.id || '');
       setExpanded(null); setHistoryOpen(false); setError('');
       setNotice(`Sürüm ${version.revision + 1} düzenlemeye alındı. Formu Kaydet ile yeni sürüm veya ayrı taslak olarak saklayabilirsiniz.`);
@@ -259,8 +269,19 @@ export default function EntrepreneurFormEditor() {
   }
   async function showDrafts(page = 1, view = 'active') {
     setLibraryOpen(true); setLibraryView(view); setLibrary(null); setBusy('list'); setLibraryError('');
-    try { setLibrary(await entrepreneurAdminAPI.formDrafts(page, undefined, view)); }
+    try {
+      const [data, drafts] = await Promise.all([entrepreneurAdminAPI.form(), entrepreneurAdminAPI.formDrafts(page, undefined, view)]);
+      setSettings(data); setLibrary(drafts);
+    }
     catch (err) { setLibraryError(await entrepreneurError(err, 'Taslaklar yüklenemedi.')); }
+    finally { setBusy(''); }
+  }
+  async function showPublications(page = 1) {
+    setPublicationsOpen(true); setBusy('publications'); setPublicationsError(''); setPublications(null);
+    try {
+      const [data, records] = await Promise.all([entrepreneurAdminAPI.form(), entrepreneurAdminAPI.formPublications(page)]);
+      setSettings(data); setPublications(records);
+    } catch (err) { setPublicationsError(await entrepreneurError(err, 'Yayın geçmişi yüklenemedi.')); }
     finally { setBusy(''); }
   }
   async function restoreDraft(draft) {
@@ -277,6 +298,7 @@ export default function EntrepreneurFormEditor() {
     try {
       if (selectedDraft) await entrepreneurAdminAPI.deleteFormDraft(selectedDraft._id, selectedDraft.revision);
       setForm(null); setSelectedDraft(null); setDraftName(''); setSaved(''); setEditingHeading(null);
+      setSourceRevision(null);
       setActiveSection(''); setExpanded(null); setHistory(null); setValidationIssue(null); setError('');
       setDeleteConfirm(false);
       setNotice(selectedDraft ? 'Form silindi. Taslaklarım → Silinenler bölümünden geri alabilirsiniz.' : 'Kaydedilmemiş form kapatıldı.');
@@ -295,6 +317,9 @@ export default function EntrepreneurFormEditor() {
   async function saveForm() {
     let content;
     try { content = preparedForm(); } catch (issue) { setCreateOpen(false); revealIssue(issue); return; }
+    if (selectedDraft && saveMode === 'version' && !dirty) {
+      setCreateOpen(false); setNotice('Kaydedilecek değişiklik yok.'); return;
+    }
     setBusy('save'); setCreateError('');
     try {
       const create = !selectedDraft || saveMode === 'copy';
@@ -302,7 +327,7 @@ export default function EntrepreneurFormEditor() {
         ? await entrepreneurAdminAPI.createFormDraft(newName, content)
         : dirty ? await entrepreneurAdminAPI.saveFormDraft(selectedDraft._id, draftName, content, selectedDraft.revision) : selectedDraft;
       adoptDraft(draft, true); setCreateOpen(false); setError('');
-      setNotice(create ? 'Yeni taslak kaydedildi.' : `Form sürüm ${draft.revision + 1} olarak kaydedildi. Önceki sürümler Sürüm Geçmişi’nde korunur.`);
+      setNotice(create ? 'Yeni taslak kaydedildi.' : draft.revision === selectedDraft.revision ? 'Kaydedilecek değişiklik yok.' : `Form sürüm ${draft.revision + 1} olarak kaydedildi. Önceki sürümler Sürüm Geçmişi’nde korunur.`);
       if (publishAfterSave) setPublishConfirm(true);
     } catch (err) { setCreateError(await entrepreneurError(err, 'Form kaydedilemedi.')); }
     finally { setBusy(''); }
@@ -327,8 +352,29 @@ export default function EntrepreneurFormEditor() {
       </Stack>
     </Stack>
     <Typography sx={{ fontSize: 13, lineHeight: 1.8 }} color="text.secondary">Taslaklarım’dan bir form seçin veya Yeni Taslak ile başlayın. Düzenlediğiniz formu kaydedip hazır olduğunda yayımlayın.</Typography>
+    <Paper variant="outlined" sx={{ px: 2, py: 1.5, borderRadius: 2 }} aria-label="Yayımdaki soru seti">
+      <Stack direction={{ xs: 'column', sm: 'row' }} gap={1} justifyContent="space-between" alignItems={{ sm: 'center' }}>
+        <Box sx={{ minWidth: 0, overflowWrap: 'anywhere' }}>
+          <Typography fontSize={13} fontWeight={600}>Yayında: {publicationLabel(publication)}</Typography>
+          <Typography fontSize={12} color="text.secondary">{settings.publishedAt ? `Yayın tarihi: ${formatDate(settings.publishedAt)}` : 'Başlangıç soru seti kullanılıyor.'}{settings.publishedAt && !publication?.draftId ? ' · Kaynak taslak ve sürüm bilgisi kaydedilmemiş.' : ''}</Typography>
+        </Box>
+        <Button size="small" sx={neutralButton} startIcon={<IconHistory size={15} />} disabled={!!busy} onClick={() => showPublications()}>Yayın Geçmişi</Button>
+      </Stack>
+    </Paper>
     {error && <Alert severity="error">{error}</Alert>}
-    {notice && <Alert severity="success">{notice}</Alert>}
+    {notice && <Alert severity={notice === 'Kaydedilecek değişiklik yok.' ? 'info' : 'success'}>{notice}</Alert>}
+    <Dialog open={publicationsOpen} onClose={() => { if (!busy) setPublicationsOpen(false); }} fullWidth maxWidth="sm" aria-labelledby="publication-history-title">
+      <DialogTitle id="publication-history-title">Yayın Geçmişi</DialogTitle>
+      <DialogContent>
+        <Typography color="text.secondary" fontSize={13} mb={2}>Yayımlama anındaki taslak adı ve sürümü korunur. Eski yayınlar için daha önce tutulmamış kaynak bilgileri gösterilemez.</Typography>
+        {publicationsError && <Alert severity="error" action={<Button disabled={!!busy} onClick={() => showPublications()}>Tekrar dene</Button>}>{publicationsError}</Alert>}
+        {busy === 'publications' ? <Box py={3} textAlign="center"><CircularProgress /></Box> : <Stack spacing={1.5}>
+          {publications?.items.map(item => <Paper key={item._id} variant="outlined" sx={{ p: 2 }}><Stack direction="row" gap={1} alignItems="center" flexWrap="wrap"><Typography fontWeight={600}>{publicationLabel(item)}</Typography>{item.isCurrent && <Chip size="small" color="success" label="Yayında" />}</Stack><Typography fontSize={12} color="text.secondary">{formatDate(item.publishedAt)}{!item.draftId ? ' · Kaynak taslak ve sürüm bilgisi kaydedilmemiş.' : ''}</Typography></Paper>)}
+          {publications && !publications.items.length && <Typography>Henüz yayın kaydı yok. Başlangıç soru seti kullanılıyor.</Typography>}
+          {publications?.pagination.pages > 1 && <Pagination count={publications.pagination.pages} page={publications.pagination.page} disabled={!!busy} onChange={(_, page) => showPublications(page)} />}
+        </Stack>}
+      </DialogContent><DialogActions><Button disabled={!!busy} onClick={() => setPublicationsOpen(false)}>Kapat</Button></DialogActions>
+    </Dialog>
     <Dialog open={libraryOpen} onClose={() => { if (!busy) setLibraryOpen(false); }} fullWidth maxWidth="md" aria-labelledby="draft-library-title">
       <DialogTitle id="draft-library-title">Taslaklarım</DialogTitle>
       <DialogContent>
@@ -340,7 +386,7 @@ export default function EntrepreneurFormEditor() {
         {busy === 'list' ? <Box py={4} textAlign="center"><CircularProgress aria-label="Taslaklar yükleniyor" /></Box> : <Stack spacing={2}>
           {library?.items.map(draft => <Box key={draft._id} sx={{ border: 1, borderColor: draft._id === selectedDraft?._id ? 'primary.main' : 'divider', borderRadius: 1, p: 2 }}>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="space-between" alignItems={{ sm: 'center' }}>
-              <Box sx={{ minWidth: 0, overflowWrap: 'anywhere' }}><Stack direction="row" gap={1} alignItems="center" flexWrap="wrap"><Typography fontWeight={600}>{draft.name}</Typography>{draft._id === selectedDraft?._id && <Chip size="small" label="Açık taslak" color="primary" variant="outlined" />}</Stack><Typography variant="body2" color="text.secondary">{draft.title} · {draft.questionCount} soru · Sürüm {draft.revision + 1}</Typography><Typography variant="caption" color="text.secondary">Oluşturulma: {formatDate(draft.createdAt)} · Son kayıt: {formatDate(draft.updatedAt)}</Typography></Box>
+              <Box sx={{ minWidth: 0, overflowWrap: 'anywhere' }}><Stack direction="row" gap={1} alignItems="center" flexWrap="wrap"><Typography fontWeight={600}>{draft.name}</Typography>{draft._id === selectedDraft?._id && <Chip size="small" label="Açık taslak" color="primary" variant="outlined" />}{isPublishedDraft(draft) && <Chip size="small" color="success" variant="outlined" label={`Yayında · Sürüm ${publication.draftRevision + 1}`} />}</Stack><Typography variant="body2" color="text.secondary">{draft.title} · {draft.questionCount} soru · Sürüm {draft.revision + 1}</Typography><Typography variant="caption" color="text.secondary">Oluşturulma: {formatDate(draft.createdAt)} · Son kayıt: {formatDate(draft.updatedAt)}</Typography></Box>
               {libraryView === 'deleted'
                 ? <Button variant="outlined" disabled={!!busy} onClick={() => restoreDraft(draft)} sx={{ ...copyButton, flexShrink: 0 }} aria-label={`${draft.name} formunu geri al`}>Geri Al</Button>
                 : <Button variant="outlined" disabled={!!busy} onClick={() => openDraft(draft._id)} sx={{ ...draftButton, flexShrink: 0 }} aria-label={`${draft.name} taslağını düzenle`}>Düzenle</Button>}
@@ -371,7 +417,7 @@ export default function EntrepreneurFormEditor() {
     </Dialog>
     <Dialog open={publishConfirm} onClose={() => { if (!busy) setPublishConfirm(false); }} fullWidth maxWidth="xs" aria-labelledby="publish-confirm-title">
       <DialogTitle id="publish-confirm-title">Soru setini yayımla</DialogTitle>
-      <DialogContent><Typography>Bu işlemi onaylarsanız mevcut soru seti girişimcilerle yayımlanacak.</Typography>{error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}</DialogContent>
+      <DialogContent><Typography fontWeight={600} mb={1}>{selectedDraft?.name} · Sürüm {(selectedDraft?.revision ?? 0) + 1}</Typography><Typography>Bu sürüm yayımlanacak ve yeni başvurularda kullanılacak.</Typography><Typography color="text.secondary" fontSize={13} mt={2}>Yerine geçeceği yayın: {publicationLabel(publication)}. Başlamış ve gönderilmiş başvurular korunur.</Typography>{error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}</DialogContent>
       <DialogActions><Button disabled={!!busy} onClick={() => setPublishConfirm(false)}>Vazgeç</Button><Button variant="contained" sx={publishButton} disabled={!!busy} onClick={publishSaved}>{busy === 'publish' ? 'Yayımlanıyor…' : 'Onayla ve Yayımla'}</Button></DialogActions>
     </Dialog>
     <Paper component="section" aria-label="Form kayıt ve yayın işlemleri" variant="outlined" sx={{ ...widgetStyle(widgetAccents.drafts), position: { xs: 'static', sm: 'sticky' }, top: 70, zIndex: 5, overflow: 'hidden', borderRadius: 2.5 }}>
@@ -381,7 +427,9 @@ export default function EntrepreneurFormEditor() {
           <Box sx={{ minWidth: 0, flex: 1 }}>
             <Stack direction="row" gap={1} alignItems="center" flexWrap="wrap" sx={{ mb: 0.5 }}>
               <Typography sx={{ fontSize: 10, fontWeight: 600, letterSpacing: 0.7, color: 'text.secondary' }}>DÜZENLENEN TASLAK</Typography>
-              {selectedDraft && <Chip size="small" label={`Sürüm ${selectedDraft.revision + 1}`} sx={{ height: 20, fontSize: 10, fontWeight: 500, bgcolor: '#f0f3f8', color: '#526174', '& .MuiChip-label': { px: 0.9 } }} />}
+              {selectedDraft && <Chip size="small" label={`Kaynak: Sürüm ${sourceRevision + 1}`} sx={{ height: 20, fontSize: 10, fontWeight: 500, bgcolor: '#f0f3f8', color: '#526174', '& .MuiChip-label': { px: 0.9 } }} />}
+              {selectedDraft && sourceRevision !== selectedDraft.revision && <Chip size="small" label={`Son kayıt: Sürüm ${selectedDraft.revision + 1}`} variant="outlined" />}
+              {isPublishedDraft(selectedDraft) && <Chip size="small" color="success" variant="outlined" label={`Yayındaki sürüm: ${publication.draftRevision + 1}`} />}
             </Stack>
             {[{ field: 'name', label: 'Taslak adı', action: 'Taslak adını düzenle', value: draftName, limit: 150 }, { field: 'title', label: 'Form başlığı', action: 'Form başlığını düzenle', value: form.title, limit: 200 }].map(({ field, label, action, value, limit }) => <Box key={field} data-form-heading={field} data-value={value} sx={{ mt: field === 'title' ? 0.25 : 0 }}>
               {editingHeading === field ? <TextField autoFocus fullWidth size="small" label={label} value={value} disabled={!!busy} onChange={event => changeHeading(field, event.target.value)}
@@ -400,6 +448,7 @@ export default function EntrepreneurFormEditor() {
               <Box aria-hidden="true" sx={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, bgcolor: dirty ? '#ba8528' : '#328675' }} />
               <Typography sx={{ fontSize: 11, color: dirty ? '#95691e' : '#53796e' }}>{dirty ? 'Kaydedilmemiş değişiklikler' : 'Taslak güncel'}</Typography>
             </Stack>
+            {selectedDraft && dirty && <Typography fontSize={11} color="text.secondary" mt={0.5}>Mevcut taslağa kaydederseniz Sürüm {selectedDraft.revision + 2} oluşacak. Ayrı taslak olarak kaydederseniz Sürüm 1 ile başlayacak.</Typography>}
           </Box>
         </Stack>
         <Stack direction="row" gap={1} flexWrap="wrap" sx={{ flexShrink: 0, '& .MuiButton-root': { minHeight: 38, px: 1.75, borderRadius: 1.5, fontSize: 12 } }}>
@@ -471,8 +520,9 @@ export default function EntrepreneurFormEditor() {
       <DialogContent>
         {selectedDraft ? <>
           <Typography color="text.secondary" mb={2}>Değişiklikleri nasıl saklamak istersiniz?</Typography>
+          {!dirty && <Alert severity="info" sx={{ mb: 2 }}>Kaydedilecek değişiklik yok. İsterseniz aynı içerikten ayrı bir taslak oluşturabilirsiniz.</Alert>}
           <RadioGroup value={saveMode} onChange={event => setSaveMode(event.target.value)} aria-label="Form kayıt seçeneği">
-            <FormControlLabel value="version" control={<Radio />} label={<Box py={1}><Typography fontWeight={600}>Mevcut taslağın yeni sürümü</Typography><Typography fontSize={13} color="text.secondary">{draftName} güncellenir. Önceki sürümleri yeniden açabilirsiniz.</Typography></Box>} />
+            <FormControlLabel value="version" disabled={!dirty} control={<Radio />} label={<Box py={1}><Typography fontWeight={600}>Mevcut taslağın yeni sürümü</Typography><Typography fontSize={13} color="text.secondary">{dirty ? `${draftName} · Sürüm ${selectedDraft.revision + 2} olarak kaydedilir. Önceki sürümler korunur.` : 'Yeni sürüm oluşturmak için içeriği veya taslak adını değiştirin.'}</Typography></Box>} />
             <FormControlLabel value="copy" control={<Radio />} label={<Box py={1}><Typography fontWeight={600}>Yeni taslak olarak kaydet</Typography><Typography fontSize={13} color="text.secondary">Bu içerik ayrı bir taslağa kaydedilir. Önceki taslak korunur.</Typography></Box>} />
           </RadioGroup>
         </> : <Typography color="text.secondary" mb={2}>Hazırladığınız formu taslaklarınıza kaydedin.</Typography>}
@@ -488,7 +538,7 @@ export default function EntrepreneurFormEditor() {
         <Typography color="text.secondary" mb={2}>{selectedDraft?.name} · Bir sürümü açıp düzenlemeye alabilirsiniz.</Typography>
         {historyError && <Alert severity="error" sx={{ mb: 2 }} action={<Button disabled={!!busy} onClick={() => showHistory()}>Tekrar dene</Button>}>{historyError}</Alert>}
         {busy === 'history' ? <Box py={3} textAlign="center"><CircularProgress /></Box> : <Stack gap={1.5}>
-          {history?.items.map(version => <Paper key={version.revision} variant="outlined" sx={{ p: 2 }}><Stack direction="row" gap={2} alignItems="center" justifyContent="space-between"><Box><Typography fontWeight={600}>Sürüm {version.revision + 1}{version.isCurrent ? ' · Güncel' : ''}</Typography><Typography fontSize={12} color="text.secondary">{formatDate(version.savedAt)} · {version.questionCount} soru</Typography></Box><Button variant="outlined" disabled={!!busy} onClick={() => loadVersion(version.revision)}>Düzenlemeye al</Button></Stack></Paper>)}
+          {history?.items.map(version => <Paper key={version.revision} variant="outlined" sx={{ p: 2 }}><Stack direction="row" gap={2} alignItems="center" justifyContent="space-between"><Box><Typography fontWeight={600}>Sürüm {version.revision + 1}{version.isCurrent ? ' · Güncel' : ''}{isPublishedDraft(selectedDraft) && publication.draftRevision === version.revision ? ' · Yayında' : ''}</Typography><Typography fontSize={12} color="text.secondary">{formatDate(version.savedAt)} · {version.questionCount} soru</Typography></Box><Button variant="outlined" disabled={!!busy} onClick={() => loadVersion(version.revision)}>Düzenlemeye al</Button></Stack></Paper>)}
           {history?.pagination.pages > 1 && <Pagination count={history.pagination.pages} page={history.pagination.page} disabled={!!busy} onChange={(_, page) => showHistory(page)} />}
         </Stack>}
       </DialogContent><DialogActions><Button disabled={!!busy} onClick={() => setHistoryOpen(false)}>Kapat</Button></DialogActions>

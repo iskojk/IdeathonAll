@@ -1,5 +1,6 @@
 const { createHash } = require('node:crypto');
 const Settings = require('../models/EntrepreneurFormSettings');
+const Publication = require('../models/EntrepreneurFormPublication');
 const initial = require('../config/entrepreneurForm');
 const { acknowledgement } = require('../config/entrepreneurQuestionSet');
 const agreements = require('../config/entrepreneurAgreements');
@@ -73,19 +74,56 @@ async function getSettings() {
   }
 }
 
-async function updateSettings({ form, revision }, userId, publish = false) {
+function currentPublication(settings) {
+  if (settings.publication) return settings.publication;
+  if (!settings.publishedAt) return null;
+  // Existing publications have no trustworthy library source. Do not guess one
+  // from matching content or from the settings' last editor.
+  return { _id: `legacy-${hash(JSON.stringify(settings.active))}-${new Date(settings.publishedAt).getTime()}`,
+    formVersion: String(settings.active.version || ''), title: settings.active.title, publishedAt: settings.publishedAt };
+}
+
+async function listPublications(query = {}) {
+  const page = query.page === undefined ? 1 : Number(query.page);
+  if ((query.page !== undefined && (typeof query.page !== 'string' || !/^\d+$/.test(query.page))) || !Number.isSafeInteger(page) || page < 1 || page > 100000) fail('Sayfa numarası geçersiz.', 400);
+  const current = currentPublication(await getSettings());
+  const filter = current ? { _id: { $ne: current._id } } : {};
+  const limit = 12, offset = (page - 1) * limit;
+  const [count, records] = await Promise.all([
+    Publication.countDocuments(filter),
+    Publication.find(filter).sort({ publishedAt: -1, _id: -1 }).skip(Math.max(0, offset - (current ? 1 : 0))).limit(page === 1 && current ? limit - 1 : limit).lean(),
+  ]);
+  const items = records.map(record => ({ ...record, isCurrent: false }));
+  if (page === 1 && current) items.unshift({ ...current, isCurrent: true });
+  const total = count + (current ? 1 : 0);
+  return { items, pagination: { page, limit, total, pages: Math.max(1, Math.ceil(total / limit)) } };
+}
+
+async function updateSettings({ form, revision }, userId, publish = false, source = null) {
   if (!Number.isInteger(revision) || revision < 0) fail('Soru setinin kayıt sürümü eksik.', 409);
   const validated = validateForm(form, { forPublication: publish });
-  await getSettings();
+  const current = await getSettings();
+  if (current.revision !== revision) fail('Soru seti başka bir oturumda değişti. Değişikliklerinizi indirin ve güncel sürümü yükleyin.', 409);
   const changes = { draft: validated, updatedBy: userId };
   if (publish) {
     validated.version = `admin-${revision + 1}-${hash(JSON.stringify(validated))}`;
     changes.active = validated;
     changes.publishedAt = new Date();
+    const previous = currentPublication(current);
+    if (previous) {
+      await Publication.init();
+      try {
+        const { _id, ...record } = previous;
+        await Publication.updateOne({ _id }, { $setOnInsert: record }, { upsert: true });
+      } catch (error) { if (error.code !== 11000) throw error; }
+    }
+    changes.publication = { _id: validated.version, formVersion: validated.version, title: validated.title,
+      publishedAt: changes.publishedAt, publishedBy: userId,
+      ...(source ? { draftId: source._id, draftName: source.name, draftRevision: source.revision } : {}) };
   }
   const result = await Settings.findOneAndUpdate({ _id: 'entrepreneur', revision }, { $set: changes, $inc: { revision: 1 } }, { new: true }).lean();
   if (!result) fail('Soru seti başka bir oturumda değişti. Değişikliklerinizi indirin ve güncel sürümü yükleyin.', 409);
   return result;
 }
 
-module.exports = { validateForm, getSettings, updateSettings };
+module.exports = { validateForm, getSettings, updateSettings, currentPublication, listPublications };
