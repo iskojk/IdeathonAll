@@ -9,8 +9,8 @@ const PendingRegistration = require('../models/PendingRegistration');
 const { normalizePhone } = require('../services/entrepreneurPhone');
 const mail = require('../services/authMail');
 const { generateToken } = require('../middleware/auth');
+const { AUTH_CODE_TTL_MS } = require('../config/authCode');
 
-const CODE_TTL = 10 * 60 * 1000;
 const ATTEMPT_TTL = 30 * 60 * 1000;
 const COOLDOWN = 60 * 1000;
 const MAX_ATTEMPTS = 5;
@@ -68,7 +68,7 @@ async function start(req, res) {
     const pending = new PendingRegistration({
       userId: new mongoose.Types.ObjectId(), name: name.trim(), email, phone: phone || undefined,
       phoneKey, ideathonId: ideathonId || undefined, passwordHash: await bcrypt.hash(password, 12),
-      codeExpiresAt: new Date(now + CODE_TTL), resendAvailableAt: new Date(now + COOLDOWN),
+      codeExpiresAt: new Date(now + AUTH_CODE_TTL_MS), resendAvailableAt: new Date(now + COOLDOWN),
       expiresAt: new Date(now + ATTEMPT_TTL)
     });
     const code = crypto.randomInt(100000, 1000000).toString();
@@ -170,7 +170,7 @@ async function resend(req, res) {
     const digest = mail.codeDigest('registration', pending._id, code);
     const updated = await PendingRegistration.findOneAndUpdate({ _id: pending._id, verifiedAt: null,
       completedAt: null, resendAvailableAt: { $lte: new Date(now) }, expiresAt: { $gt: new Date(now) } },
-    { $set: { codeDigest: digest, attempts: 0, codeExpiresAt: new Date(Math.min(now + CODE_TTL, pending.expiresAt.getTime())),
+    { $set: { codeDigest: digest, attempts: 0, codeExpiresAt: new Date(Math.min(now + AUTH_CODE_TTL_MS, pending.expiresAt.getTime())),
       resendAvailableAt: new Date(now + COOLDOWN) } }, { new: true });
     if (!updated) throw fail(409, 'Kod isteği değişti. Lütfen tekrar deneyin.');
     try { await mail.sendCode(pending.email, code, pending.name, 'registration'); }

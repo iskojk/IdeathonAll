@@ -15,10 +15,9 @@ const Draft = r('./src/models/EntrepreneurFormDraft');
 try {
   const initial = await settings.getSettings();
   assert.equal((await settings.listPublications()).items.length, 0);
-  const consent = initial.active.questions.find(q => q.id === 'kvkk_ack');
-  const blank = { ...structuredClone(initial.active), sections: initial.active.sections.filter(s => s.id === consent.section), questions: [consent] };
+  const blank = { ...structuredClone(initial.active), sections: [], questions: [] };
   let empty = await drafts.saveDraft(null, { name: 'Boş taslak', form: blank });
-  assert.equal(empty.form.questions.length, 1);
+  assert.equal(empty.form.questions.length, 0);
   await assert.rejects(drafts.publishDraft(empty._id, { revision: 0, settingsRevision: initial.revision }), error => error.status === 422);
   assert.deepEqual(await settings.getSettings(), initial, 'Boş taslak yayımlanmamalı.');
   const form = { ...blank, sections: [{ id: 'business', title: 'Girişim', description: '' }, ...blank.sections], questions: [
@@ -26,16 +25,15 @@ try {
     { id: 'second', section: 'business', type: 'singleChoice', label: 'Aşama', options: ['Fikir', 'Ürün'], required: false },
     { id: 'third', section: 'business', type: 'multipleChoice', label: 'Alanlar', options: ['Yazılım', 'Donanım'], required: false },
     { id: 'fourth', section: 'business', type: 'file', label: 'Sunum', maxFiles: 2, required: false },
-    consent,
   ] };
   let draft = await drafts.saveDraft(null, { name: 'İlk form', form });
   const unchanged = await drafts.saveDraft(draft._id, { name: draft.name, form: draft.form, revision: draft.revision });
   assert.deepEqual(unchanged, draft, 'Aynı içerik tarih veya sürüm artırmamalı.');
   assert.equal(await Version.countDocuments({ draftId: draft._id }), 0);
   const original = structuredClone(draft);
-  const reordered = { ...form, questions: [form.questions[2], form.questions[0], form.questions[3], form.questions[1], consent] };
+  const reordered = { ...form, questions: [form.questions[2], form.questions[0], form.questions[3], form.questions[1]] };
   draft = await drafts.saveDraft(draft._id, { name: 'Güncel form', form: reordered, revision: draft.revision });
-  assert.deepEqual(draft.form.questions.map(q => q.id), ['third', 'first', 'fourth', 'second', 'kvkk_ack']);
+  assert.deepEqual(draft.form.questions.map(q => q.id), ['third', 'first', 'fourth', 'second']);
   assert.deepEqual((await drafts.getVersion(draft._id, '0')).version.form, original.form);
   const revisionOne = structuredClone(draft);
   const competing = await Promise.allSettled(['A', 'B'].map(label => drafts.saveDraft(draft._id, { name: label, form: draft.form, revision: draft.revision })));

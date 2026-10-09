@@ -42,6 +42,7 @@ export default function EntrepreneurApplicationForm() {
   const operation = useRef(false);
   const mounted = useRef(false);
   const formCardRef = useRef(null);
+  const headingRef = useRef(null);
   const sectionHeadingRef = useRef(null);
   const scrollToSection = useRef(false);
 
@@ -186,7 +187,7 @@ export default function EntrepreneurApplicationForm() {
 
   async function editApplication(cancel = false) {
     if (operation.current) return;
-    if (cancel && !window.confirm('Düzenlemeyi iptal edip son gönderdiğiniz başvuruya dönmek istiyor musunuz?')) return;
+    if (cancel && !window.confirm('Bu düzenleme sırasında yaptığınız değişiklikler bırakılacak. Son gönderdiğiniz başvuru korunacak. Başvuru kartına dönmek istiyor musunuz?')) return;
     operation.current = true; setBusy('edit'); setError('');
     try {
       const { data } = await (cancel ? entrepreneurAPI.cancelEdit(applicationRef.current.revision) : entrepreneurAPI.beginEdit(applicationRef.current.revision));
@@ -195,7 +196,11 @@ export default function EntrepreneurApplicationForm() {
       answersRef.current = data.application.answers; setAnswers(data.application.answers);
       if (data.form) setForm(data.form);
       clearDraft(user?._id); setDirty(false); setRecoveryDraft(null); setAutoSavePaused(false); setErrors({}); setStep(0);
-      setNotice(cancel ? '' : 'Başvurunuzu düzenleyebilirsiniz. Değişiklikleriniz yeniden gönderdiğinizde değerlendirmeye alınır.');
+      setNotice('');
+      if (cancel) {
+        headingRef.current?.focus({ preventScroll: true });
+        window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+      }
     } catch (err) { if (mounted.current) handleError(err); }
     finally { operation.current = false; if (mounted.current) setBusy(''); }
   }
@@ -305,15 +310,19 @@ export default function EntrepreneurApplicationForm() {
   return (
     <div className={styles.workspace}>
       <header className={styles.heading}>
-        <div>
-          <span className={styles.eyebrow}>GİRİŞİMCİLER {form.isMock && <span>Örnek soru seti</span>}</span>
-          <h1>{submitted ? 'Girişimci Başvurum' : application?.isResubmission ? 'Başvurumu Düzenle' : form.title}</h1>
-          <p>{submitted ? 'Başvurunuzun durumunu buradan takip edebilir, gönderdiğiniz yanıtları inceleyebilirsiniz.' : `${form.description} Taslağınızı kaydedip daha sonra devam edebilirsiniz.`}</p>
+        <div className={styles.headingMain}>
+          <div>
+            <span className={styles.eyebrow}>GİRİŞİMCİLER</span>
+            <h1 ref={headingRef} tabIndex={-1}>{submitted ? 'Girişimci Başvurum' : application?.isResubmission ? 'Başvurumu Düzenle' : form.title}</h1>
+            <p>{submitted ? 'Başvurunuzun durumunu buradan takip edebilir, gönderdiğiniz yanıtları inceleyebilirsiniz.' : `${form.description || ''} Taslağınızı kaydedip daha sonra devam edebilirsiniz.`}</p>
+          </div>
+          {application?.isResubmission && <button type="button" className={styles.exitEditButton} disabled={!!busy} onClick={() => editApplication(true)}><i className="bi bi-arrow-left" aria-hidden="true" />{busy === 'edit' ? 'Çıkılıyor…' : 'Çıkış'}</button>}
         </div>
+        {application?.isResubmission && <div className={styles.headingNotes}>
+          <p>Değişikliklerinizi herhangi bir bölümden Güncelle ve Gönder ile iletebilirsiniz. Gönderene kadar son başvurunuz değerlendirmede kalır.</p>
+        </div>}
       </header>
 
-      {form.isMock && !submitted && <div className={styles.demoNotice}>Bu form örnek sorular içerir. Gerçek başvuru soru seti hazır olduğunda güncellenecektir.</div>}
-      {application?.isResubmission && <div className={styles.demoNotice}>Değişikliklerinizi herhangi bir bölümden Güncelle ve Gönder ile iletebilirsiniz. Gönderene kadar son başvurunuz değerlendirmede kalır.</div>}
       {error && <div className={styles.error} role="alert">{error}</div>}
       {notice && <div className={submitted ? 'visually-hidden' : styles.success} role="status">{notice}</div>}
       {recoveryDraft && <div className={styles.error} role="alert">
@@ -326,7 +335,7 @@ export default function EntrepreneurApplicationForm() {
         <button type="button" className={styles.secondaryButton} onClick={() => { clearDraft(user?._id); setRecoveryDraft(null); }}>Güncel başvuruyla devam et</button>
       </div>}
 
-      {!!application?.previousVersions?.length && <details className={styles.previousAnswers}><summary>Önceki örnek formdaki yanıtlarınız korundu</summary><p>Sorular Word belgesine göre güncellendi. Aktarılan yanıtları kontrol edin; önceki yanıtlarınıza aşağıdan erişebilirsiniz.</p>{application.previousVersions.map((snapshot, index) => <div key={index}>{snapshot.form.questions.filter(q => q.type !== 'file' && snapshot.answers?.[q.id] !== undefined).map(q => <div key={q.id}><strong>{q.label}</strong><p>{Array.isArray(snapshot.answers[q.id]) ? snapshot.answers[q.id].join(', ') : String(snapshot.answers[q.id])}</p></div>)}</div>)}</details>}
+      {!!application?.previousVersions?.length && <details className={styles.previousAnswers}><summary>Önceki başvuru yanıtlarınız</summary><p>Önceki yanıtlarınızı aşağıdan görüntüleyebilirsiniz.</p>{application.previousVersions.map((snapshot, index) => <div key={index}>{snapshot.form.questions.filter(q => q.type !== 'file' && snapshot.answers?.[q.id] !== undefined).map(q => <div key={q.id}><strong>{q.label}</strong><p>{Array.isArray(snapshot.answers[q.id]) ? snapshot.answers[q.id].join(', ') : String(snapshot.answers[q.id])}</p></div>)}</div>)}</details>}
       <ApplicationView {...(submitted ? { application, form, user, onEdit: () => editApplication(), busy: !!busy } : {})}>
       {submitted ? <EntrepreneurApplicationDetails form={form} answers={answers} documents={documents} onDownload={download} onReadAgreement={setSelectedAgreement} busy={!!busy} /> : <div className={styles.layout}>
         <aside className={styles.sidebar}>
@@ -361,7 +370,6 @@ export default function EntrepreneurApplicationForm() {
               <legend><span>{form.questions.findIndex(item => item.id === question.id) + 1}.</span> {question.label}{question.required && <b aria-label="zorunlu"> *</b>}</legend>
               <div id={helpId} className={styles.questionHelp}><span>{question.type === 'text' && question.inputType === 'date' ? 'Tarih' : typeLabels[question.type]}{(question.type === 'file' || question.inputType === 'date') && !question.required ? ' · İsteğe bağlı' : ''}</span>{question.help && question.type !== 'consent' && <p>{question.help}</p>}</div>
               {question.type === 'consent' && <>
-                {question.privacyDraft && <p className={styles.demoNotice}>KVKK metni taslaktır; kurum bilgileri henüz tamamlanmamıştır.</p>}
                 <div className={styles.privacyText} tabIndex={0} aria-label="KVKK Aydınlatma Metni">{question.help}</div>
                 <label className={styles.consentLabel}><input {...inputProps} type="checkbox" checked={value === true} onChange={event => changeAnswer(question.id, event.target.checked)} /><span>{question.options?.[0] || 'KVKK Aydınlatma Metni’ni okudum ve bilgilendirildim.'}</span></label>
               </>}

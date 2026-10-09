@@ -1,5 +1,5 @@
 // Official pages checked on 2026-10-07; both display "Son güncelleme: Mart 2026".
-// These are separate mandatory acknowledgements below the KVKK question.
+// These are the two mandatory acknowledgements at the end of the application.
 module.exports = [
   {
     id: 'privacy_policy_ack', type: 'consent', required: true,

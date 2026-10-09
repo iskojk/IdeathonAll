@@ -23,7 +23,7 @@ export default function DraftLibraryTest() {
     const form = { id: 'entrepreneur-application', title: 'İlk form', description: '', privacy: { draft: false }, sections: [{ id: 'contact', title: 'İletişim' }, { id: 'privacy', title: 'KVKK' }], questions: [
       { id: 'name', section: 'contact', label: 'Ad', type: 'text', required: true, maxLength: 100 },
       { id: 'kvkk_ack', section: 'privacy', label: 'KVKK', type: 'consent', required: true, help: 'Test aydınlatma metni.' },
-    ] };
+    ], agreements: [{ id: 'privacy_policy_ack', type: 'consent', required: true, label: 'Gizlilik Politikası' }, { id: 'terms_ack', type: 'consent', required: true, label: 'Kullanım Şartları' }] };
     const drafts = [
       { _id: 'a', name: 'Birinci taslak', form: copy(form), revision: 0, createdAt: '2026-10-07T09:00:00Z', updatedAt: '2026-10-07T10:00:00Z' },
       { _id: 'b', name: 'İkinci taslak', form: { ...copy(form), title: 'İkinci form' }, revision: 0, createdAt: '2026-10-06T09:00:00Z', updatedAt: '2026-10-06T10:00:00Z' },
@@ -231,7 +231,7 @@ export default function DraftLibraryTest() {
       assert(custom.type === 'singleChoice' && !Object.hasOwn(custom, 'inputType') && !Object.hasOwn(custom, 'maxFiles'), 'Biçim değişiminde eski ayarlar kaldı');
       assert(custom.required === true, 'Zorunluluk ayarı kayboldu');
       assert(custom.options.join(',') === 'Ürün,Hizmet', 'Seçenekler temizlenmedi');
-      assert(drafts[2].form.sections.at(-1).id === 'privacy', 'KVKK bölümü sonda kalmadı');
+      assert(!drafts[2].form.questions.some(q => q.id === 'kvkk_ack') && drafts[2].form.agreements.length === 2, 'KVKK kaldırılmadı veya diğer onaylar kayboldu');
       stage = 'bölüm adını değiştirme';
       button('Ürün').click();
       await wait(() => document.querySelector('button[aria-pressed="true"]')?.textContent.startsWith('Ürün'), 'Ürün bölümü seçilmedi');
@@ -276,7 +276,7 @@ export default function DraftLibraryTest() {
       const reorderRevision = drafts[2].revision;
       await saveCurrent();
       await wait(() => drafts[2].revision > reorderRevision && !button('Bölümü düzenle')?.matches(':disabled'), 'Bölüm sırası kaydedilmedi');
-      assert(drafts[2].form.sections[0].title === 'Ürün ve Çözüm' && drafts[2].form.sections.at(-1).id === 'privacy', 'Sıralama kayboldu veya KVKK taşındı');
+      assert(drafts[2].form.sections[0].title === 'Ürün ve Çözüm' && !drafts[2].form.sections.some(s => s.id === 'privacy'), 'Sıralama kayboldu veya kaldırılan KVKK bölümü geri geldi');
       assert(drafts[2].form.questions[0].label === 'Uyarlanabilir alan', 'Bölüm içeriği sıralanmadı');
       setEpoch(value => value + 1);
       await pause(100);
@@ -439,7 +439,7 @@ export default function DraftLibraryTest() {
       assert(fieldValue('Taslak adı') === '' && !document.querySelector('[data-question-id]'), 'Listeden yeni taslak boş başlamadı');
       await type('Taslak adı', 'Listeden eklenen taslak'); await saveCurrent();
       await wait(() => drafts.length === 5 && !document.querySelector('[role=dialog]'), 'Listeden oluşturulan boş taslak kaydedilemedi');
-      assert(drafts[4].name === 'Listeden eklenen taslak' && drafts[4].form.questions.length === 1, 'Liste yeni taslak mekanizması içeriği yanlış');
+      assert(drafts[4].name === 'Listeden eklenen taslak' && drafts[4].form.questions.length === 0 && drafts[4].form.agreements.length === 2, 'Liste yeni taslak mekanizması içeriği yanlış');
       await type('Form başlığı', 'Listeden yenisi açılırken değişen başlık');
       button('Taslaklarım').click(); await wait(() => libraryPlus() && !libraryPlus().disabled, 'Yeni taslak listesi açılmadı');
       confirmLeave = false; libraryPlus().click(); await pause(100);

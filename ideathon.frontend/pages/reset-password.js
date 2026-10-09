@@ -91,7 +91,7 @@ export default function ResetPassword() {
         <div className="auth-box">
           <div className="auth-header">
             <h1>Şifre Sıfırla</h1>
-            <p>Email adresinize gönderilen 6 haneli kodu girin</p>
+            <p>Email adresinize gönderilen 6 haneli kodu girin. Kod 5 dakika geçerlidir.</p>
           </div>
 
           {error && <ErrorMessage message={error} />}

@@ -1,7 +1,8 @@
 const { getSettings } = require('./entrepreneurFormSettings');
+const { withoutKvkk } = require('./entrepreneurConsentPolicy');
 
 async function getEntrepreneurForm() {
-  return (await getSettings()).active;
+  return withoutKvkk((await getSettings()).active);
 }
 
 module.exports = { getEntrepreneurForm };

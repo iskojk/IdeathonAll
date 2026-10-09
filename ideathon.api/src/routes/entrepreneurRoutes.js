@@ -9,6 +9,7 @@ const { draftFormUpgrade } = require('../services/entrepreneurFormMigration');
 const { validateAnswers, validDocument } = require('../services/entrepreneurValidation');
 const { normalizeDocumentName } = require('../services/entrepreneurDocumentName');
 const { workingApplication } = require('../services/entrepreneurWorkflow');
+const { withoutKvkk, withoutKvkkAnswer, preserveKvkkAnswer } = require('../services/entrepreneurConsentPolicy');
 
 const router = express.Router();
 // Busboy rejects at the configured limit, so add one byte for an inclusive 10 MiB maximum.
@@ -28,7 +29,7 @@ function checkDraft(application, revision) {
 
 function publicApplication(application) {
   const data = workingApplication(application);
-  return { _id: data._id, applicationNumber: data.applicationNumber, answers: data.answers, documents: data.documents, status: data.status, reviewStatus: data.reviewStatus || 'submitted', viewedAt: data.viewedAt, isResubmission: !!data.isResubmission, revision: data.__v, updatedAt: data.updatedAt, submittedAt: data.submittedAt, privacy: data.privacy, previousVersions: data.previousVersions };
+  return { _id: data._id, applicationNumber: data.applicationNumber, answers: withoutKvkkAnswer(data.answers), documents: data.documents, status: data.status, reviewStatus: data.reviewStatus || 'submitted', viewedAt: data.viewedAt, isResubmission: !!data.isResubmission, revision: data.__v, updatedAt: data.updatedAt, submittedAt: data.submittedAt, privacy: data.privacy, previousVersions: data.previousVersions };
 }
 
 const draftDocuments = application => application.editDraft?.documents || application.documents;
@@ -50,7 +51,7 @@ async function loadApplication(userId) {
 
 router.get('/my', async (req, res) => {
   const application = await loadApplication(req.user._id);
-  res.json({ success: true, data: { form: application?.form || await getEntrepreneurForm(), application: application ? publicApplication(application) : null } });
+  res.json({ success: true, data: { form: application ? withoutKvkk(application.form) : await getEntrepreneurForm(), application: application ? publicApplication(application) : null } });
 });
 
 router.post('/my/edit', async (req, res) => {
@@ -61,7 +62,7 @@ router.post('/my/edit', async (req, res) => {
     application.editDraft = { answers: structuredClone(application.answers), documents: application.documents.toObject(), startedAt: new Date() };
     await application.save();
   }
-  res.json({ success: true, data: { form: application.form, application: publicApplication(application) } });
+  res.json({ success: true, data: { form: withoutKvkk(application.form), application: publicApplication(application) } });
 });
 
 router.post('/my/cancel-edit', async (req, res) => {
@@ -92,14 +93,16 @@ router.put('/my', async (req, res) => {
   if (typeof submit !== 'boolean') return res.status(400).json({ success: false, message: 'Gönderim durumu geçersiz.' });
   let application = await loadApplication(req.user._id);
   if (application) checkDraft(application, revision);
-  const form = application?.form || await getEntrepreneurForm();
+  const form = application ? withoutKvkk(application.form) : await getEntrepreneurForm();
   if (formVersion !== form.version) throw conflict('Soru seti güncellendi. Sayfayı yenileyin.');
-  const result = validateAnswers(form, answers, application ? draftDocuments(application) : [], submit);
+  const result = validateAnswers(form, withoutKvkkAnswer(answers), application ? draftDocuments(application) : [], submit);
   if (Object.keys(result.errors).length) {
     return res.status(422).json({ success: false, message: 'Lütfen işaretli alanları kontrol edin.', errors: result.errors });
   }
   if (!application) application = new Application({ userId: req.user._id, form: JSON.parse(JSON.stringify(form)) });
   const resubmitting = !!application.editDraft;
+  result.answers = preserveKvkkAnswer(application.answers, result.answers);
+  if (!resubmitting || submit) application.form = form;
   let unused = [];
   if (resubmitting && !submit) application.editDraft.answers = result.answers;
   else application.answers = result.answers;
@@ -123,8 +126,6 @@ router.put('/my', async (req, res) => {
     application.viewedBy = undefined;
     application.reviewedAt = undefined;
     application.reviewedBy = undefined;
-    const consent = form.questions.find(question => question.id === 'kvkk_ack' && question.type === 'consent');
-    if (consent) application.privacy = { text: consent.help, version: consent.privacyVersion, draft: consent.privacyDraft, acknowledgedAt: application.submittedAt };
     if (form.agreements?.length) application.privacy = { ...application.privacy,
       agreements: form.agreements.map(({ id, label, url, version, acknowledgement }) => ({ id, label, url, version, acknowledgement, acceptedAt: application.submittedAt })),
     };

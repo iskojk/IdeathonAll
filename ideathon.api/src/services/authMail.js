@@ -1,6 +1,7 @@
 const path = require('node:path');
 const crypto = require('node:crypto');
 const nodemailer = require('nodemailer');
+const { AUTH_CODE_VALIDITY_MINUTES } = require('../config/authCode');
 
 // Explicit process environment wins, including isolated Mailpit configurations.
 require('dotenv').config({ path: path.resolve(__dirname, '../../.env.auth-mail'), quiet: true });
@@ -59,18 +60,17 @@ function getTransport() {
 async function sendCode(email, code, name, purpose) {
   const registration = purpose === 'registration';
   const title = registration ? 'Kayıt doğrulama kodunuz' : 'Şifre sıfırlama kodunuz';
-  const minutes = registration ? 10 : 15;
   const sender = process.env.AUTH_MAIL_FROM_NAME || 'AFZ-Girişimci Başvurum';
   const introduction = registration
     ? `${sender} platformuna hoş geldiniz. Hesabınızı oluşturmak ve başvuru sürecinize devam etmek için e-posta adresinizi doğrulayın.`
-    : `${sender} platformundaki hesabınız için bir şifre sıfırlama talebi aldık.`;
+    : 'Anahtar Fikirler Zirvesi platformundaki Girişimci hesabınız için bir şifre sıfırlama talebi aldık.';
   const instruction = registration
     ? 'Aşağıdaki kodu kayıt ekranındaki doğrulama alanına girerek hesabınızı oluşturabilirsiniz.'
     : 'Yeni şifrenizi belirlemek için aşağıdaki kodu şifre sıfırlama ekranına girin.';
   const disclaimer = registration
     ? 'Bu kaydı siz başlatmadıysanız bu e-postayı dikkate almayın.'
     : 'Bu talebi siz oluşturmadıysanız bu e-postayı dikkate almayın. Şifreniz, sıfırlama işlemi tamamlanana kadar değişmez.';
-  const expiry = `Bu kod ${minutes} dakika geçerlidir ve yalnızca bir kez kullanılabilir.`;
+  const expiry = `Bu kod ${AUTH_CODE_VALIDITY_MINUTES} dakika geçerlidir ve yalnızca bir kez kullanılabilir.`;
   const text = `${sender}\n\nMerhaba ${name},\n\n${introduction}\n\n${instruction}\n\n${title}: ${code}\n\n${expiry}\nGüvenliğiniz için bu kodu kimseyle paylaşmayın.\n\n${disclaimer}\n\n${sender} Ekibi`;
   return getTransport().sendMail({
     from: { name: sender, address: process.env.AUTH_MAIL_FROM }, to: email,

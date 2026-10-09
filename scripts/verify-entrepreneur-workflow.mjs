@@ -37,9 +37,8 @@ const form = { id: 'workflow-qa', version: 'workflow-qa-v1', title: 'Yerel Test 
   { id: 'solution', label: 'Çözüm', section: 'general', type: 'textarea', required: true },
   { id: 'email', label: 'E-posta', section: 'general', type: 'text', inputType: 'email', required: true },
   { id: 'pitch_deck', label: 'Sunum', section: 'general', type: 'file', maxFiles: 2 },
-  { id: 'kvkk_ack', label: 'KVKK', section: 'general', type: 'consent', required: true, help: 'Test onay metni', privacyVersion: 'test-v1' },
-], agreements: [{ id: 'terms_ack', label: 'Kullanım Şartları', type: 'consent', required: true, acknowledgement: 'Test onayı', version: 'test-v1' }] };
-const initialAnswers = { venture_name: 'İş Akışı QA', solution: 'İlk gönderilen çözüm', email: 'workflow@example.com', kvkk_ack: true, terms_ack: true };
+], agreements: [{ id: 'privacy_policy_ack', label: 'Gizlilik Politikası', type: 'consent', required: true, acknowledgement: 'Test gizlilik onayı', version: 'test-v1' }, { id: 'terms_ack', label: 'Kullanım Şartları', type: 'consent', required: true, acknowledgement: 'Test onayı', version: 'test-v1' }] };
+const initialAnswers = { venture_name: 'İş Akışı QA', solution: 'İlk gönderilen çözüm', email: 'workflow@example.com', privacy_policy_ack: true, terms_ack: true };
 let app;
 const save = (who, answers, submit = false, extra = {}, expected = 200) => request('/my', who, 'PUT', { answers, submit, revision: app.revision, formVersion: form.version, ...extra }, expected);
 async function upload(who, name) {
@@ -116,7 +115,7 @@ try {
   await request('/my', owner, 'PUT', { answers: initialAnswers, revision: staleRevision, formVersion: form.version }, 409);
   detail = (await request(`/admin/${app._id}`, admin)).data;
   assert.equal(detail.source, 'self'); assert.equal(detail.answers.solution, changedAnswers.solution);
-  assert.equal(detail.privacy.acknowledgedAt, app.submittedAt);
+  assert.ok(detail.privacy.agreements.every(agreement => agreement.acceptedAt === app.submittedAt));
   detail = (await request(`/admin/${app._id}/view`, superadmin, 'POST', { submittedAt: app.submittedAt })).data;
   assert.equal(detail.reviewStatus, 'viewed');
   const manual = await Application.create({ userId: other.user._id, source: 'admin', contact: { name: 'Manuel kişi', email: 'manual@example.com', ventureName: 'Manuel girişim' }, form, answers: initialAnswers, status: 'submitted', submittedAt: new Date() });

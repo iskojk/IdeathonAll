@@ -56,7 +56,7 @@ export default function RegistrationVerification({ pending, onPendingChange, onC
     <div>
       <p className="text-dark-gray lh-28" style={{ overflowWrap: 'anywhere' }}>
         <strong>{pending.email}</strong> adresine gönderdiğimiz altı haneli kodu girin.
-        Kod 10 dakika geçerlidir. E-postayı bulamıyorsanız spam klasörünü de kontrol edin.
+        Kod 5 dakika geçerlidir. E-postayı bulamıyorsanız spam klasörünü de kontrol edin.
       </p>
       {error && <ErrorMessage message={error} />}
       {notice && <p role="status" className="text-success">{notice}</p>}

@@ -3,11 +3,12 @@ const assert = require('node:assert/strict');
 const initial = require('../src/config/entrepreneurForm');
 const { validateForm } = require('../src/services/entrepreneurFormSettings');
 
-test('Word template validates with 21 questions and a versioned privacy text', () => {
+test('Application template validates with 20 questions and only two mandatory agreements', () => {
   const result = validateForm(initial);
-  assert.equal(result.questions.length, 21);
-  assert.equal(result.questions.at(-1).type, 'consent');
-  assert.equal(result.privacy.version, initial.privacy.version);
+  assert.equal(result.questions.length, 20);
+  assert.equal(result.questions.some(q => q.id === 'kvkk_ack'), false);
+  assert.deepEqual(result.agreements.map(q => q.id), ['privacy_policy_ack', 'terms_ack']);
+  assert.equal(result.privacy, undefined);
 });
 test('dynamic count, types and question order are preserved after validation', () => {
   const form = structuredClone(initial);
@@ -15,7 +16,7 @@ test('dynamic count, types and question order are preserved after validation', (
   form.questions.splice(0, 0, { id: 'custom', section: 'contact', label: 'Yeni soru', type: 'singleChoice', required: false, options: ['Evet', 'Hayır'] });
   const result = validateForm(form);
   assert.equal(result.questions[0].id, 'custom');
-  assert.equal(result.questions.length, 21);
+  assert.equal(result.questions.length, 20);
   assert.equal(result.questions.some(q => q.id === 'last_name'), false);
 });
 test('malformed IDs, references, options and limits are rejected', () => {
@@ -37,18 +38,20 @@ test('privacy and terms controls cannot be removed or altered by form settings',
   for (const agreements of [undefined, [], [{ id: 'terms_ack', required: false, url: 'javascript:alert(1)' }]]) {
     const result = validateForm({ ...initial, agreements });
     assert.deepEqual(result.agreements, initial.agreements);
-    assert.equal(result.questions.length, 21);
+    assert.equal(result.questions.length, 20);
   }
 });
-test('KVKK cannot be removed, made optional, moved ahead or replaced by another format', () => {
-  for (const mutate of [
-    f => f.questions.pop(),
-    f => { f.questions.at(-1).required = false; },
-    f => { f.questions.at(-1).type = 'text'; },
-    f => { f.questions.at(-1).section = 'contact'; },
-    f => { f.questions.at(-1).help = ''; },
-    f => { f.privacy.draft = false; },
-  ]) { const form = structuredClone(initial); mutate(form); assert.throws(() => validateForm(form), error => error.status === 422); }
-  const edited = structuredClone(initial); edited.questions.at(-1).help += '\nYeni açıklama.';
-  assert.notEqual(validateForm(edited).privacy.version, initial.privacy.version);
+test('legacy KVKK is retired without changing the source and empty drafts remain saveable', () => {
+  const legacy = structuredClone(initial);
+  legacy.sections.push({ id: 'privacy', title: 'KVKK' });
+  legacy.questions.push({ id: 'kvkk_ack', section: 'privacy', label: 'KVKK', type: 'consent', required: true, help: 'Eski metin' });
+  legacy.privacy = { text: 'Eski metin', version: 'previous', draft: false };
+  const original = structuredClone(legacy);
+  assert.deepEqual(validateForm(legacy), validateForm(initial));
+  assert.deepEqual(legacy, original);
+  const empty = { ...initial, sections: [], questions: [] };
+  assert.deepEqual(validateForm(empty).questions, []);
+  assert.deepEqual(validateForm(empty).agreements, initial.agreements);
+  assert.throws(() => validateForm(empty, { forPublication: true }), error => error.status === 422);
+  assert.doesNotThrow(() => validateForm(initial, { forPublication: true }));
 });

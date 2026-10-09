@@ -4,6 +4,7 @@ const UserIdeathonRole = require('../models/UserIdeathonRole');
 const { generateToken } = require('../middleware/auth');
 const emailService = require('../services/emailService');
 const { normalizePhone } = require('../services/entrepreneurPhone');
+const { AUTH_CODE_TTL_MS } = require('../config/authCode');
 const identityConflict = error => error.keyPattern?.phoneKey || error.keyValue?.phoneKey
   ? 'Daha önce bu telefon numarası kullanılmıştır.'
   : 'Daha önce bu e-posta adresi kullanılmıştır.';
@@ -675,7 +676,7 @@ class AuthController {
       const digest = mail.codeDigest('password_reset', email, resetCode);
       const saved = await User.updateOne({ _id: user._id, email, isActive: true, $or: [
         { passwordResetSentAt: { $exists: false } }, { passwordResetSentAt: { $lte: new Date(now.getTime() - 60000) } }
-      ] }, { $set: { passwordResetCode: digest, passwordResetExpires: new Date(now.getTime() + 15 * 60000),
+      ] }, { $set: { passwordResetCode: digest, passwordResetExpires: new Date(now.getTime() + AUTH_CODE_TTL_MS),
         passwordResetAttempts: 0, passwordResetSentAt: now } });
       if (saved.modifiedCount !== 1) return res.json(generic);
       try {

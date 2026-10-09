@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { normalizePhone } = require('../services/entrepreneurPhone');
+const { AUTH_CODE_TTL_MS } = require('../config/authCode');
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -195,8 +196,7 @@ userSchema.methods.createPasswordResetCode = function() {
   this.passwordResetAttempts = 0;
   this.passwordResetSentAt = new Date();
 
-  // 15 dakika geçerli
-  this.passwordResetExpires = Date.now() + 15 * 60 * 1000; // 15 minutes
+  this.passwordResetExpires = Date.now() + AUTH_CODE_TTL_MS;
 
   return resetCode;
 };

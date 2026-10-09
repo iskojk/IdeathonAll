@@ -72,7 +72,7 @@ try {
   await request('/entrepreneurs/my/export?format=pdf', { token, expected: 404 });
   const initial = await (await request('/entrepreneurs/my', { token })).json();
   const form = initial.data.form;
-  assert.equal(form.questions.length, 21);
+  assert.equal(form.questions.length, 20);
   assert.deepEqual(form.agreements.map(item => item.id), ['privacy_policy_ack', 'terms_ack']);
   assert.equal(initial.data.application, null);
   await request('/entrepreneurs/my', { token, method: 'PUT', body: { answers: {}, formVersion: form.version, submit: true }, expected: 422 });
@@ -132,7 +132,7 @@ try {
     const rejected = await (await request('/entrepreneurs/my', { token, method: 'PUT', expected: 422, body: { answers: { ...answers, company_founded }, submit: true, revision: application.revision, formVersion: form.version } })).json();
     assert.deepEqual(Object.keys(rejected.errors), ['company_founded']);
   }
-  for (const id of ['kvkk_ack', ...form.agreements.map(item => item.id)]) {
+  for (const id of form.agreements.map(item => item.id)) {
     for (const value of [undefined, false, 'true']) {
       const rejected = await (await request('/entrepreneurs/my', { token, method: 'PUT', expected: 422, body: { answers: { ...answers, [id]: value }, submit: true, revision: application.revision, formVersion: form.version } })).json();
       assert.deepEqual(Object.keys(rejected.errors), [id]);
@@ -142,8 +142,8 @@ try {
   assert.equal(application.answers.phone, '+905321234567');
   assert.equal(application.status, 'submitted');
   assert.ok(application.submittedAt);
-  assert.equal(application.privacy.text, form.privacy.text);
-  assert.equal(application.privacy.acknowledgedAt, application.submittedAt);
+  assert.equal(application.privacy.text, undefined);
+  assert.equal(application.privacy.acknowledgedAt, undefined);
   assert.deepEqual(application.privacy.agreements, form.agreements.map(({ id, label, url, version, acknowledgement }) => ({ id, label, url, version, acknowledgement, acceptedAt: application.submittedAt })));
   assert.equal(application.answers.stage, answers.stage);
   assert.equal(application.answers.company_founded, '2024-02-29');
@@ -286,7 +286,7 @@ try {
   const oldWordForm = structuredClone(form);
   delete oldWordForm.agreements;
   oldWordForm.version = 'qa-before-agreements';
-  const oldWordAnswers = { venture_name: 'Eski taslak korunuyor', kvkk_ack: true };
+  const oldWordAnswers = { venture_name: 'Eski taslak korunuyor' };
   await Application.create({ userId: userIds.at(-1), form: oldWordForm, answers: oldWordAnswers });
   const upgradedWord = (await (await request('/entrepreneurs/my', { token: oldWordToken })).json()).data;
   assert.deepEqual(upgradedWord.form.questions, oldWordForm.questions);
@@ -299,7 +299,7 @@ try {
   const rejectedWord = await (await request('/entrepreneurs/my', { token: oldWordToken, method: 'PUT', expected: 422, body: { answers: unacceptedAnswers, revision: 1, formVersion: upgradedWord.form.version, submit: true } })).json();
   assert.deepEqual(Object.keys(rejectedWord.errors).sort(), ['privacy_policy_ack', 'terms_ack']);
   assert.equal((await (await request('/entrepreneurs/my', { token: oldWordToken })).json()).data.application.revision, 1);
-  console.log('OK: KVKK, gizlilik ve kullanım şartları ayrı ayrı zorunlu; onay kayıtları havuz detayında; eski taslakta yeni onaylar atlanamıyor');
+  console.log('OK: Gizlilik ve kullanım şartları ayrı ayrı zorunlu; KVKK kaldırıldı; onay kayıtları havuz detayında; eski taslakta yeni onaylar atlanamıyor');
 
   // Only superadmin can manage the form. Save and publish are separate and use
   // optimistic revisions; real settings are restored conditionally in finally.
@@ -318,7 +318,7 @@ try {
   let config = (await (await request('/entrepreneurs/admin/form', { token: superadminToken, method: 'PUT', body: { form: changed, revision: settingsBefore.revision } })).json()).data;
   lastSettingsRevision = config.revision;
   assert.equal(config.active.version, settingsBefore.active.version);
-  assert.equal((await (await request('/entrepreneurs/my', { token: freshToken })).json()).data.form.version, settingsBefore.active.version);
+  assert.equal((await (await request('/entrepreneurs/my', { token: freshToken })).json()).data.form.version, form.version);
   await request('/entrepreneurs/admin/form/publish', { token: superadminToken, method: 'POST', body: { form: changed, revision: settingsBefore.revision }, expected: 409 });
   config = (await (await request('/entrepreneurs/admin/form/publish', { token: superadminToken, method: 'POST', body: { form: changed, revision: config.revision } })).json()).data;
   lastSettingsRevision = config.revision;
@@ -327,7 +327,7 @@ try {
   assert.equal(active.questions[0].id, 'custom_question');
   assert.equal(active.questions[1].type, 'textarea');
   assert.equal(active.questions.some(q => q.id === 'last_name'), false);
-  assert.equal(active.questions.length, 21);
+  assert.equal(active.questions.length, 20);
   assert.deepEqual(active.agreements, form.agreements);
   await request('/entrepreneurs/my', { token: freshToken, method: 'PUT', expected: 409, body: { answers: {}, formVersion: form.version } });
   const dynamicAnswers = { ...answers, custom_question: 'İkinci', venture_name: searchKey + ' dinamik' };
@@ -336,7 +336,8 @@ try {
   const dynamicDetail = (await (await request(`/entrepreneurs/admin/${dynamicApplication._id}`, { token: superadminToken })).json()).data;
   assert.equal(dynamicDetail.form.version, active.version);
   assert.equal(dynamicDetail.answers.custom_question, 'İkinci');
-  assert.equal(dynamicDetail.privacy.version, active.privacy.version);
+  assert.equal(dynamicDetail.privacy.version, undefined);
+  assert.deepEqual(dynamicDetail.privacy.agreements.map(item => item.id), ['privacy_policy_ack', 'terms_ack']);
   assert.deepEqual((await (await request(detailPath, { token: superadminToken })).json()).data.form, form);
   console.log('OK: Süperadmin yetkisi, taslak/yayın ayrımı, soru ekleme-silme-tür-sıra değişimi, eşzamanlı düzenleme koruması, yeni formun havuza gönderimi ve eski başvuruların korunması');
 

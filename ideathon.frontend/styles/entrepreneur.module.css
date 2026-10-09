@@ -1,10 +1,15 @@
 .workspace { max-width: 1260px; margin: 0 auto; padding: 44px 24px 80px; color: #243451; }
-.heading { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 24px; position: static; width: auto; }
-.heading h1 { font-size: clamp(27px, 3vw, 38px); line-height: 1.25; font-weight: 700; color: #042070; margin: 14px 0; }
-.heading p { color: #59677e; font-size: 15px; line-height: 1.65; margin: 0; max-width: 680px; }
+.heading { display: block; margin-bottom: 20px; padding: 20px 24px; position: static; width: auto; background: white; border: 1px solid #d8e5f2; border-radius: 16px; box-shadow: 0 4px 16px #163c6308; }
+.headingMain { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.headingMain > div { min-width: 0; }
+.heading h1 { font-size: clamp(24px, 2.5vw, 30px); line-height: 1.3; font-weight: 700; color: #042070; margin: 8px 0; overflow-wrap: anywhere; }
+.heading p { color: #59677e; font-size: 14px; line-height: 1.65; margin: 0; }
+.headingNotes { margin-top: 14px; padding-top: 12px; border-top: 1px solid #e8eef5; }
+.headingNotes p { font-size: 12px; color: #526781; }
+.headingNotes p + p { margin-top: 5px; }
+.exitEditButton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex-shrink: 0; min-width: 110px; padding: 9px 14px; border: 1px solid #0079b7; border-radius: 8px; background: #0079b7; color: white; font-size: 13px; font-weight: 500; line-height: 1.6; cursor: pointer; }
+.exitEditButton:hover:not(:disabled) { background: #00689f; border-color: #00689f; }
 .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 1px; color: #087ab9; }
-.eyebrow span { margin-left: 10px; padding: 5px 10px; border-radius: 20px; background: #e7eefb; color: #435c84; font-size: 11px; letter-spacing: 0; text-transform: none; }
-.demoNotice { padding: 12px 18px; background: #eaf3ff; color: #365476; border-radius: 10px; font-size: 13px; margin-bottom: 24px; }
 .applicationSummary { margin: 0; padding: 0; background: white; border: 1px solid #d8e5f2; border-radius: 16px; box-shadow: 0 4px 16px #163c6308; }
 .summaryActions { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 24px; border-bottom: 1px solid #e8eef5; background: #fbfdff; border-radius: 16px 16px 0 0; }
 .summaryTitle { display: flex; align-items: center; gap: 9px; margin: 0; color: #243451; font-size: 15px; font-weight: 600; line-height: 1.5; }
@@ -154,8 +159,8 @@
 .fieldError { color: #bd3535; font-size: 12px; margin: 8px 0 0; }
 .invalidQuestion { border-left: 3px solid #dd7373; padding-left: 12px; }
 .loading { min-height: 420px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
-@media (max-width: 991px) { .heading { align-items: flex-start; flex-direction: column; } .layout { grid-template-columns: 1fr; } .sidebar { position: static; } .sidebar nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; } .savedStatus { margin-top: 8px; } }
-@media (max-width: 575px) { .workspace { padding: 24px 14px 50px; } .formCard { padding: 22px 18px; } .options { grid-template-columns: 1fr; } .sidebar { padding: 18px 12px; } .step { gap: 7px; padding: 10px 6px; } .step strong { font-size: 11px; } .stepNumber { width: 24px; height: 24px; } .actions button { padding: 10px 12px; font-size: 12px; } }
+@media (max-width: 991px) { .layout { grid-template-columns: 1fr; } .sidebar { position: static; } .sidebar nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; } .savedStatus { margin-top: 8px; } }
+@media (max-width: 575px) { .workspace { padding: 24px 14px 50px; } .heading { padding: 18px; } .headingMain { flex-wrap: wrap; gap: 12px; } .headingMain > div { flex: 1 1 100%; } .formCard { padding: 22px 18px; } .options { grid-template-columns: 1fr; } .sidebar { padding: 18px 12px; } .step { gap: 7px; padding: 10px 6px; } .step strong { font-size: 11px; } .stepNumber { width: 24px; height: 24px; } .actions button { padding: 10px 12px; font-size: 12px; } }
 
 .privacyText { max-height: 360px; overflow-y: auto; white-space: pre-wrap; padding: 20px; border: 1px solid #d5deef; background: #f7f9fc; border-radius: 12px; line-height: 1.7; margin-bottom: 18px; }
 .consentLabel { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; font-weight: 600; }

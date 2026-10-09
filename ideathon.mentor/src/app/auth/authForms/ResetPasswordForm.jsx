@@ -354,7 +354,7 @@ export default function ResetPasswordForm() {
             boxShadow: "0 2px 8px rgba(33, 150, 243, 0.15)"
           }}
         >
-          <strong>Önemli:</strong> Doğrulama kodu 15 dakika geçerlidir. Kod süreniz dolduysa yeni kod talep edin.
+          <strong>Önemli:</strong> Doğrulama kodu 5 dakika geçerlidir. Kod süreniz dolduysa yeni kod talep edin.
         </Alert>
 
         {/* Kaydet Butonu */}

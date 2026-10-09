@@ -2,8 +2,8 @@ const { createHash } = require('node:crypto');
 const Settings = require('../models/EntrepreneurFormSettings');
 const Publication = require('../models/EntrepreneurFormPublication');
 const initial = require('../config/entrepreneurForm');
-const { acknowledgement } = require('../config/entrepreneurQuestionSet');
 const agreements = require('../config/entrepreneurAgreements');
+const { withoutKvkk } = require('./entrepreneurConsentPolicy');
 
 const fail = (message, status = 422) => { throw Object.assign(new Error(message), { status }); };
 const hash = value => createHash('sha256').update(value).digest('hex').slice(0, 16);
@@ -17,23 +17,24 @@ function integer(value, max, label) {
   return value;
 }
 
-// Shared allowlist for save/publish. Upload limits and mandatory KVKK cannot be bypassed.
+// Shared allowlist for save/publish. The two mandatory agreements come from config.
 function validateForm(input, { forPublication = false } = {}) {
   if (!input || typeof input !== 'object') fail('Soru seti eksik.');
-  if (!Array.isArray(input.sections) || !input.sections.length || input.sections.length > 20) fail('1–20 bölüm olmalıdır.');
+  if (!Array.isArray(input.sections) || input.sections.length > 20) fail('En fazla 20 bölüm olabilir.');
   const sectionIds = new Set();
   const sections = input.sections.map(section => {
     if (!identifier(section?.id) || sectionIds.has(section.id)) fail('Bölüm kimlikleri benzersiz olmalıdır.');
     sectionIds.add(section.id);
     return { id: section.id, title: text(section.title, 150, 'Bölüm adı', true), description: text(section.description || '', 1000, 'Bölüm açıklaması') };
   });
-  if (!Array.isArray(input.questions) || !input.questions.length || input.questions.length > 100) fail('1–100 soru olmalıdır.');
+  if (!Array.isArray(input.questions) || input.questions.length > 100) fail('En fazla 100 soru olabilir.');
+  const current = withoutKvkk({ ...input, sections });
   const ids = new Set();
-  const questions = input.questions.map(item => {
+  const questions = current.questions.map(item => {
     if (!identifier(item?.id) || ids.has(item.id) || !sectionIds.has(item.section)) fail('Soru kimliği veya bölümü geçersiz.');
     if (agreements.some(agreement => agreement.id === item.id)) fail('Bu soru kimliği zorunlu gizlilik/kullanım onayına ayrılmıştır.');
     ids.add(item.id);
-    if (!['text', 'textarea', 'singleChoice', 'multipleChoice', 'file', 'consent'].includes(item.type) || typeof item.required !== 'boolean') fail('Cevap türü veya zorunluluk bilgisi geçersiz.');
+    if (!['text', 'textarea', 'singleChoice', 'multipleChoice', 'file'].includes(item.type) || typeof item.required !== 'boolean') fail('Cevap türü veya zorunluluk bilgisi geçersiz.');
     const question = { id: item.id, section: item.section, type: item.type, required: item.required, label: text(item.label, 500, 'Soru metni', true), help: text(item.help || '', item.type === 'consent' ? 20000 : 2000, 'Soru açıklaması'), placeholder: text(item.placeholder || '', 500, 'Yer tutucu') };
     if (['text', 'textarea'].includes(item.type)) {
       question.maxLength = integer(item.maxLength, 10000, 'Karakter sınırı');
@@ -50,17 +51,11 @@ function validateForm(input, { forPublication = false } = {}) {
       if (item.searchPlaceholder) question.searchPlaceholder = text(item.searchPlaceholder, 100, 'Arama yer tutucusu');
     }
     if (item.type === 'file') question.maxFiles = integer(item.maxFiles, 10, 'Dosya sayısı');
-    if (item.type === 'consent' && item.id !== 'kvkk_ack') fail('Onay türü yalnızca KVKK sorusunda kullanılabilir.');
     return question;
   });
   questions.sort((a, b) => sections.findIndex(s => s.id === a.section) - sections.findIndex(s => s.id === b.section));
-  const consent = questions.find(question => question.id === 'kvkk_ack');
-  if (forPublication && !questions.some(question => question.type !== 'consent')) fail('Yayımlamak için en az bir başvuru sorusu ekleyin.');
-  if (!consent || consent.type !== 'consent' || !consent.required || questions.at(-1) !== consent || consent.help.length < 50) fail('Son soru zorunlu KVKK onayı ve aydınlatma metni olmalıdır.');
-  const privacy = { text: consent.help, version: hash(consent.help), draft: input.privacy?.draft !== false };
-  if (!privacy.draft && /\[[^\]]+\]/.test(privacy.text)) fail('KVKK metnindeki kurum bilgilerini tamamlamadan taslak işaretini kaldıramazsınız.');
-  Object.assign(consent, { options: [acknowledgement], privacyVersion: privacy.version, privacyDraft: privacy.draft });
-  return { id: initial.id, title: text(input.title, 200, 'Form başlığı', true), description: text(input.description || '', 1500, 'Form açıklaması'), isMock: false, sourceUrl: null, maxFileSize: initial.maxFileSize, acceptedFileTypes: initial.acceptedFileTypes, sections, questions, privacy, agreements: structuredClone(agreements) };
+  if (forPublication && !questions.length) fail('Yayımlamak için en az bir başvuru sorusu ekleyin.');
+  return { id: initial.id, title: text(input.title, 200, 'Form başlığı', true), description: text(input.description || '', 1500, 'Form açıklaması'), isMock: false, sourceUrl: null, maxFileSize: initial.maxFileSize, acceptedFileTypes: initial.acceptedFileTypes, sections: current.sections, questions, agreements: structuredClone(agreements) };
 }
 
 async function getSettings() {

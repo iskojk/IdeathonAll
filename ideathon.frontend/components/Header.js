@@ -260,10 +260,13 @@ export default function Header() {
                 </li>
                 <li className="nav-item">
                   <Link
-                    href="/girisimciler"
+                    href={router.pathname === '/girisimciler/basvuru' ? router.asPath : isAuthenticated ? '/girisimciler/basvuru' : '/girisimciler'}
                     className="nav-link"
                     aria-current={router.pathname.startsWith('/girisimciler') ? 'page' : undefined}
-                    onClick={closeMobileMenu}
+                    onClick={event => {
+                      if (router.pathname === '/girisimciler/basvuru' && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) event.preventDefault();
+                      closeMobileMenu();
+                    }}
                   >
                     Girişimciler
                   </Link>

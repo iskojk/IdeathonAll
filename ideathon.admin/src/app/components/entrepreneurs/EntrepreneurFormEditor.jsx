@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Accordion, AccordionSummary, AccordionDetails, Alert, Box, Button, Checkbox, Chip, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions, FormControlLabel, IconButton, Radio, RadioGroup, Pagination, Paper, Stack, Tab, Tabs, TextField, Typography, alpha } from '@mui/material';
-import { IconChevronDown, IconArrowUp, IconArrowDown, IconPlus, IconTrash, IconFolders, IconEye, IconDeviceFloppy, IconSend, IconDownload, IconRefresh, IconArrowLeft, IconPencil, IconHistory, IconFileText } from '@tabler/icons-react';
+import { Alert, Box, Button, Checkbox, Chip, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions, FormControlLabel, IconButton, Radio, RadioGroup, Pagination, Paper, Stack, Tab, Tabs, TextField, Typography, alpha } from '@mui/material';
+import { IconArrowUp, IconArrowDown, IconPlus, IconTrash, IconFolders, IconEye, IconDeviceFloppy, IconSend, IconDownload, IconRefresh, IconArrowLeft, IconPencil, IconHistory, IconFileText } from '@tabler/icons-react';
 import { entrepreneurAdminAPI, entrepreneurError } from '@/utils/api/entrepreneurs';
 import EntrepreneurQuestionEditor, { answerFormats, questionFormat, withFormat } from './EntrepreneurQuestionEditor';
 import EntrepreneurSectionList from './EntrepreneurSectionList';
@@ -17,7 +17,14 @@ const copyButton = { color: '#087c85', borderColor: '#b8dfe1', bgcolor: '#f0fafa
 const publishButton = { bgcolor: '#168061', color: '#fff', boxShadow: 'none', '&:hover': { bgcolor: '#11684f', boxShadow: 'none' } };
 const widgetAccents = { drafts: '#6676ad', sections: '#328f88', questions: '#3c85bd', privacy: '#b28b43' };
 const widgetStyle = accent => ({ border: 1, borderColor: 'divider', borderLeft: `4px solid ${accent}`, borderRadius: 2, bgcolor: 'background.paper', boxShadow: '0 3px 14px rgba(30,50,70,.05)' });
-const copy = value => JSON.parse(JSON.stringify(value));
+const copy = value => {
+  const form = JSON.parse(JSON.stringify(value));
+  const retiredSections = new Set(form.questions.filter(q => q.id === 'kvkk_ack').map(q => q.section));
+  form.questions = form.questions.filter(q => q.id !== 'kvkk_ack');
+  form.sections = form.sections.filter(s => !retiredSections.has(s.id) || form.questions.some(q => q.section === s.id));
+  delete form.privacy;
+  return form;
+};
 
 export default function EntrepreneurFormEditor() {
   const [settings, setSettings] = useState(null);
@@ -67,11 +74,12 @@ export default function EntrepreneurFormEditor() {
   const isPublishedDraft = draft => !!publication?.draftId && String(publication.draftId) === String(draft?._id);
 
   function adoptDraft(draft, preservePosition = false) {
-    setSelectedDraft(draft); setDraftName(draft.name); setForm(copy(draft.form)); setEditingHeading(null);
+    const content = copy(draft.form);
+    setSelectedDraft(draft); setDraftName(draft.name); setForm(content); setEditingHeading(null);
     setSourceRevision(draft.revision);
-    setSaved(JSON.stringify({ name: draft.name, form: draft.form })); setValidationIssue(null);
+    setSaved(JSON.stringify({ name: draft.name, form: content })); setValidationIssue(null);
     if (!preservePosition || !draft.form.questions.some(q => q.id === expanded)) setExpanded(null);
-    if (!preservePosition || !draft.form.sections.some(s => s.id === activeSection)) setActiveSection(draft.form.sections.find(s => s.id !== draft.form.questions.find(q => q.id === 'kvkk_ack')?.section)?.id || '');
+    if (!preservePosition || !content.sections.some(s => s.id === activeSection)) setActiveSection(content.sections[0]?.id || '');
   }
   useEffect(() => {
     const controller = new AbortController();
@@ -113,8 +121,7 @@ export default function EntrepreneurFormEditor() {
     const section = { id, title: sectionName.trim(), description: sectionDescription.trim() };
     setForm(current => {
       if (sectionDialog.id) return { ...current, sections: current.sections.map(s => s.id === id ? section : s) };
-      const sections = [...current.sections];
-      sections.splice(sections.findIndex(s => s.id === current.questions.find(q => q.id === 'kvkk_ack').section), 0, section);
+      const sections = [...current.sections, section];
       return { ...current, sections };
     });
     setActiveSection(id); setExpanded(null); setNotice(''); setSectionDialog(null);
@@ -122,14 +129,12 @@ export default function EntrepreneurFormEditor() {
   function reorderSection(id, targetId) {
     if (busy) return;
     setForm(current => {
-      const privacyId = current.questions.find(q => q.id === 'kvkk_ack').section;
-      const movable = current.sections.filter(s => s.id !== privacyId);
+      const movable = [...current.sections];
       const from = movable.findIndex(s => s.id === id);
       const to = movable.findIndex(s => s.id === targetId);
       if (from < 0 || to < 0 || from === to) return current;
       movable.splice(to, 0, movable.splice(from, 1)[0]);
-      let index = 0;
-      const sections = current.sections.map(s => s.id === privacyId ? s : movable[index++]);
+      const sections = movable;
       const questions = sections.flatMap(s => current.questions.filter(q => q.section === s.id));
       return { ...current, sections, questions };
     });
@@ -138,8 +143,7 @@ export default function EntrepreneurFormEditor() {
     setNotice('');
   }
   function moveSection(id, delta) {
-    const privacyId = form.questions.find(q => q.id === 'kvkk_ack').section;
-    const movable = form.sections.filter(s => s.id !== privacyId);
+    const movable = form.sections;
     const target = movable[movable.findIndex(s => s.id === id) + delta];
     if (target) reorderSection(id, target.id);
   }
@@ -169,8 +173,7 @@ export default function EntrepreneurFormEditor() {
       if (options.some(option => option.length > 300)) fail('Her seçenek en fazla 300 karakter olabilir.', q);
       return { ...q, options };
     });
-    const privacyId = form.questions.find(q => q.id === 'kvkk_ack').section;
-    const sections = [...form.sections.filter(s => s.id !== privacyId), form.sections.find(s => s.id === privacyId)];
+    const sections = form.sections;
     return { ...form, sections, questions: sections.flatMap(section => questions.filter(q => q.section === section.id)) };
   }
   function revealIssue(issue) {
@@ -201,8 +204,7 @@ export default function EntrepreneurFormEditor() {
   function startBlank() {
     if (dirty && !window.confirm('Kaydedilmemiş değişiklikler bırakılıp boş bir taslak açılsın mı?')) return;
     const base = copy(settings.active);
-    const consent = base.questions.find(q => q.id === 'kvkk_ack');
-    const blank = { ...base, title: 'Girişimci Başvurusu', description: '', sections: [{ id: consent.section, title: 'Gizlilik ve Kullanım Onayları', description: '' }], questions: [consent] };
+    const blank = { ...base, title: 'Girişimci Başvurusu', description: '', sections: [], questions: [] };
     delete blank.version;
     clearDraftEditor(); setLibraryOpen(false);
     setSelectedDraft(null); setDraftName(''); setForm(blank); setSaved('');
@@ -212,7 +214,7 @@ export default function EntrepreneurFormEditor() {
   }
   function add(section) {
     const id = `question_${crypto.randomUUID().replaceAll('-', '')}`;
-    setForm(current => ({ ...current, questions: [...current.questions.slice(0, -1), { id, section, label: 'Yeni soru', type: 'text', required: false, maxLength: 500 }, current.questions.at(-1)] }));
+    setForm(current => ({ ...current, questions: [...current.questions, { id, section, label: 'Yeni soru', type: 'text', required: false, maxLength: 500 }] }));
     setActiveSection(section); setExpanded(id); setNotice('');
   }
   function download() {
@@ -263,9 +265,10 @@ export default function EntrepreneurFormEditor() {
     setBusy('version'); setHistoryError(''); setLibraryError('');
     try {
       const { draft, version } = await entrepreneurAdminAPI.formDraftVersion(draftId, revision);
-      adoptDraft(draft); setForm(copy(version.form)); setDraftName(version.name);
+      const content = copy(version.form);
+      adoptDraft(draft); setForm(content); setDraftName(version.name);
       setSourceRevision(version.revision);
-      setActiveSection(version.form.sections.find(s => s.id !== version.form.questions.find(q => q.id === 'kvkk_ack').section)?.id || '');
+      setActiveSection(content.sections[0]?.id || '');
       setExpanded(null); setHistoryOpen(false); setLibraryOpen(false); setError('');
       setNotice(`Sürüm ${version.revision + 1} düzenlemeye alındı. Formu Kaydet ile yeni sürüm veya ayrı taslak olarak saklayabilirsiniz.`);
     } catch (err) {
@@ -364,13 +367,11 @@ export default function EntrepreneurFormEditor() {
 
   if (loading) return <Box p={6} textAlign="center"><CircularProgress aria-label="Soru seti yükleniyor" /></Box>;
   if (!settings) return <Alert severity="error" action={<Button onClick={reload} disabled={!!busy}>Tekrar dene</Button>}>{error}</Alert>;
-  const kvkk = form?.questions.find(item => item.id === 'kvkk_ack');
-  const privacySection = kvkk?.section;
   const contentQuestions = form?.questions.filter(q => q.type !== 'consent') || [];
-  const editableSections = form?.sections.filter(s => s.id !== privacySection || contentQuestions.some(q => q.section === s.id)) || [];
+  const editableSections = form?.sections || [];
   const currentSection = editableSections.find(s => s.id === activeSection) || editableSections[0];
   const items = contentQuestions.filter(q => q.section === currentSection?.id);
-  const movableSections = editableSections.filter(s => s.id !== privacySection);
+  const movableSections = editableSections;
   const sectionIndex = movableSections.findIndex(s => s.id === currentSection?.id);
 
   return <Stack spacing={3}>
@@ -522,7 +523,7 @@ export default function EntrepreneurFormEditor() {
           <Paper component="nav" aria-label="Soru seti bölümleri" variant="outlined" sx={{ ...widgetStyle(widgetAccents.sections), p: 1.5 }}>
             <Typography sx={{ fontSize: 12, fontWeight: 700, px: 1, mb: 0.75, color: widgetAccents.sections }}>BÖLÜMLER</Typography>
             <Typography sx={{ fontSize: 11, px: 1, mb: 1.5, lineHeight: 1.6 }} color="text.secondary">Tutamacı sürükleyerek sıralayın.</Typography>
-            <EntrepreneurSectionList sections={editableSections} selectedId={currentSection?.id} fixedId={privacySection} questions={contentQuestions} disabled={!!busy}
+            <EntrepreneurSectionList sections={editableSections} selectedId={currentSection?.id} questions={contentQuestions} disabled={!!busy}
               onSelect={id => { setActiveSection(id); setExpanded(null); }} onReorder={reorderSection} />
             <Button fullWidth variant="outlined" startIcon={<IconPlus size={16} />} sx={{ ...copyButton, mt: 2 }} disabled={form.sections.length >= 20} onClick={() => editSection()}>Bölüm ekle</Button>
           </Paper>
@@ -539,21 +540,17 @@ export default function EntrepreneurFormEditor() {
               {!items.length && <Box sx={{ py: 3, textAlign: 'center', bgcolor: 'grey.50', borderRadius: 1.5 }}><Typography sx={{ fontSize: 14 }}>Bu bölümde henüz soru yok.</Typography><Typography sx={{ fontSize: 12, mt: 1 }} color="text.secondary">İlk soruyu ekleyerek başlayın.</Typography></Box>}
               <Button variant="outlined" sx={{ ...copyButton, alignSelf: 'flex-start' }} startIcon={<IconPlus size={18} />} disabled={form.questions.length >= 100} onClick={() => add(currentSection.id)}>Soru ekle</Button>
               {form.questions.length >= 100 && <Typography fontSize={12} color="text.secondary">En fazla 100 soru ekleyebilirsiniz.</Typography>}
-              {currentSection.id !== privacySection && <Stack direction="row" gap={1} flexWrap="wrap" sx={{ pt: 1.5, borderTop: 1, borderColor: 'divider' }}>
+              <Stack direction="row" gap={1} flexWrap="wrap" sx={{ pt: 1.5, borderTop: 1, borderColor: 'divider' }}>
                 <Button size="small" sx={neutralButton} startIcon={<IconArrowUp size={15} />} disabled={sectionIndex === 0} onClick={() => moveSection(currentSection.id, -1)}>Bölümü yukarı taşı</Button>
                 <Button size="small" sx={neutralButton} startIcon={<IconArrowDown size={15} />} disabled={sectionIndex === movableSections.length - 1} onClick={() => moveSection(currentSection.id, 1)}>Bölümü aşağı taşı</Button>
                 <Button size="small" color="error" sx={{ bgcolor: 'transparent', ml: { sm: 'auto' } }} startIcon={<IconTrash size={15} />} disabled={!!items.length} title={items.length ? 'Bölümü silmek için önce soruları başka bir bölüme taşıyın veya silin.' : undefined} onClick={() => setRemoveSection(currentSection)}>Boş bölümü sil</Button>
-              </Stack>}
+              </Stack>
             </Stack> : <Stack alignItems="center" spacing={2} py={3}><Typography color="text.secondary">Sorularınızı gruplamak için bir bölüm ekleyin.</Typography><Button variant="outlined" sx={copyButton} onClick={() => editSection()}>Bölüm ekle</Button></Stack>}
           </Paper>
         </Box>
         <Paper variant="outlined" sx={{ ...widgetStyle(widgetAccents.privacy), p: { xs: 2, sm: 2.5 } }}>
           <Typography sx={{ fontSize: 16, fontWeight: 600, mb: 1 }}>Gizlilik ve Kullanım Onayları</Typography>
-          <Typography sx={{ fontSize: 13, mb: 2 }} color="text.secondary">Başvurunun sonunda gösterilir. KVKK metnini burada düzenleyebilirsiniz.</Typography>
-          <Accordion expanded={expanded === kvkk.id} onChange={(_, open) => setExpanded(open ? kvkk.id : null)} disableGutters sx={{ boxShadow: 'none', border: 1, borderColor: 'divider', '&:before': { display: 'none' } }}>
-            <AccordionSummary expandIcon={<IconChevronDown size={18} />}><Typography sx={{ fontSize: 14, fontWeight: 500 }}>{kvkk.label}</Typography></AccordionSummary>
-            <AccordionDetails><Stack spacing={2}><TextField label="Soru metni" value={kvkk.label} onChange={e => question(kvkk.id, { label: e.target.value })} inputProps={{ maxLength: 500 }} /><TextField label="KVKK aydınlatma metni" multiline minRows={8} maxRows={18} value={kvkk.help || ''} onChange={e => question(kvkk.id, { help: e.target.value })} inputProps={{ maxLength: 20000 }} /><FormControlLabel control={<Checkbox checked={form.privacy?.draft !== false} onChange={e => setForm({ ...form, privacy: { ...form.privacy, draft: e.target.checked } })} />} label="KVKK metni taslak (başvuru ekranında belirtilir)" /></Stack></AccordionDetails>
-          </Accordion>
+          <Typography sx={{ fontSize: 13, mb: 2 }} color="text.secondary">Başvurunun sonunda Gizlilik Politikası ve Kullanım Şartları onayları gösterilir.</Typography>
           {(form.agreements || []).map(agreement => <Box key={agreement.id} sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider', borderRadius: 0 }}><Stack direction="row" gap={1} alignItems="center"><Typography sx={{ fontSize: 13, fontWeight: 500 }}>{agreement.label}</Typography><Chip size="small" variant="outlined" label="Zorunlu" sx={{ fontSize: 11 }} /></Stack><Typography sx={{ fontSize: 12, mt: 0.75 }} color="text.secondary">{agreement.acknowledgement}</Typography></Box>)}
         </Paper>
       </Stack>

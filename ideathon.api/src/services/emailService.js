@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const { AUTH_CODE_VALIDITY_MINUTES } = require('../config/authCode');
 
 class EmailService {
   constructor() {
@@ -987,7 +988,7 @@ class EmailService {
 
               <div class="alert-warning">
                 <strong>Önemli</strong>
-                <p style="margin: 5px 0 0 0;">Bu kod 15 dakika içinde geçersiz olacaktır. Eğer bu isteği siz yapmadıysanız, bu email'i görmezden gelebilirsiniz.</p>
+                <p style="margin: 5px 0 0 0;">Bu kod ${AUTH_CODE_VALIDITY_MINUTES} dakika içinde geçersiz olacaktır. Eğer bu isteği siz yapmadıysanız, bu email'i görmezden gelebilirsiniz.</p>
               </div>
 
               <p>Kodu kullanarak şifrenizi sıfırlamak için sistemdeki şifre sıfırlama bölümüne gidin ve yukarıdaki kodu girin.</p>

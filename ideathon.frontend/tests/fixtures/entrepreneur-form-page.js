@@ -22,18 +22,17 @@ export default function EntrepreneurFormTest() {
   useEffect(() => {
     let cancelled = false;
     let server = { _id: 'qa-application', revision: 0, status: 'draft', answers: { venture_name: 'İlk yanıt', phone: '+905321234567' }, documents: [], updatedAt: new Date().toISOString() };
-    const form = { version: 2, title: 'QA', description: '', sections: [{ id: 'contact', title: 'İletişim' }, { id: 'documents', title: 'Dokümanlar' }, { id: 'privacy', title: 'KVKK' }], questions: [
+    const form = { version: 2, title: 'QA', description: '', sections: [{ id: 'contact', title: 'İletişim' }, { id: 'documents', title: 'Dokümanlar' }], questions: [
       { id: 'venture_name', section: 'contact', type: 'text', label: 'Girişim', required: true, maxLength: 150 },
       { id: 'phone', section: 'contact', type: 'text', inputType: 'tel', label: 'Telefon', required: true, maxLength: 30 },
       { id: 'company_founded', section: 'contact', type: 'text', inputType: 'date', label: 'Şirketleşme Tarihi', required: false, maxLength: 10 },
       { id: 'pitch_deck', section: 'documents', type: 'file', label: 'Sunum', required: false, maxFiles: 1 },
-      { id: 'kvkk_ack', section: 'privacy', type: 'consent', label: 'KVKK Aydınlatma Metni', required: true, help: 'Test aydınlatma metni', options: ['Okudum ve bilgilendirildim.'] },
     ], agreements: [
       { id: 'privacy_policy_ack', type: 'consent', required: true, label: 'Gizlilik Politikası', url: 'https://ideathon.anahtarfikirler.com/gizlilik-politikasi' },
       { id: 'terms_ack', type: 'consent', required: true, label: 'Kullanım Şartları', url: 'https://ideathon.anahtarfikirler.com/kullanim-sartlari' },
     ] };
     const testUser = { _id: 'qa-draft-user', name: 'Test', email: 'test@example.com', role: 'user' };
-    const originals = { login: authAPI.login, getMe: authAPI.getMe, get: entrepreneurAPI.getMyApplication, save: entrepreneurAPI.saveApplication, download: entrepreneurAPI.downloadApplication, linkClick: HTMLAnchorElement.prototype.click, revoke: URL.revokeObjectURL, unread: messagingAPI.getUnreadCount, confirm: window.confirm };
+    const originals = { login: authAPI.login, getMe: authAPI.getMe, get: entrepreneurAPI.getMyApplication, save: entrepreneurAPI.saveApplication, download: entrepreneurAPI.downloadApplication, linkClick: HTMLAnchorElement.prototype.click, revoke: URL.revokeObjectURL, unread: messagingAPI.getUnreadCount, confirm: window.confirm, replace: router.replace, push: router.push, pathname: router.pathname, asPath: router.asPath };
     const downloads = [];
     const revoked = new Set();
     let holdDownload = false;
@@ -59,18 +58,7 @@ export default function EntrepreneurFormTest() {
     authAPI.login = async () => ({ success: true, data: { user: testUser, token: 'local-ui-fixture' } });
     authAPI.getMe = async () => ({ success: true, data: testUser });
     messagingAPI.getUnreadCount = async () => ({ data: { unreadCount: 0 } });
-    let holdGet = false;
-    let releaseGet;
-    let failGet = false;
-    entrepreneurAPI.getMyApplication = async () => {
-      // Strict Mode can run both the cancelled and active mount requests.
-      if (holdGet) await new Promise(resolve => {
-        const previous = releaseGet;
-        releaseGet = () => { previous?.(); resolve(); };
-      });
-      if (failGet) throw new Error('Test durum bağlantısı kesildi');
-      return { data: { form, application: structuredClone(server) } };
-    };
+    entrepreneurAPI.getMyApplication = async () => ({ data: { form, application: structuredClone(server) } });
     let saves = 0;
     let release;
     let holdNextSave = false;
@@ -106,10 +94,10 @@ export default function EntrepreneurFormTest() {
       const pdfButton = () => document.querySelector('button[aria-label="Başvuru PDF önizle"]');
       assert(!pdfButton(), 'Taslakta PDF indirme düğmesi gösterildi');
       const progress = () => document.querySelector('progress');
-      const checkProgress = value => assert(progress().value === value && progress().max === 5, 'İlerleme zorunlu sorular ve üç onaya göre hesaplanmadı');
+      const checkProgress = value => assert(progress().value === value && progress().max === 4, 'İlerleme zorunlu sorular ve iki onaya göre hesaplanmadı');
       const sectionButton = title => [...document.querySelectorAll('nav[aria-label="Başvuru bölümleri"] button')].find(button => button.textContent.includes(title));
       checkProgress(2);
-      assert(sectionButton('Dokümanlar').textContent.includes('İsteğe bağlı alanlar'), 'İsteğe bağlı evrak bölümü eksik gösterildi');
+      assert(sectionButton('Dokümanlar').textContent.includes('0/2'), 'Son bölümdeki iki onay sayılmadı');
       sectionButton('Dokümanlar').click();
       await wait(() => document.getElementById('answer-pitch_deck'), 'İsteğe bağlı evrak alanı gösterilmedi');
       checkProgress(2);
@@ -173,14 +161,14 @@ export default function EntrepreneurFormTest() {
       offline = false;
       await wait(() => server.answers.venture_name === 'Bağlantı kesilse de korunan yanıt', 'Geri yüklenen yanıt kaydedilmedi');
       setResult('RUNNING: required agreements');
-      sectionButton('KVKK').click();
-      await wait(() => document.getElementById('answer-kvkk_ack'), 'KVKK bölümü açılmadı');
-      const submitButton = () => document.getElementById('answer-kvkk_ack').closest('form').querySelector('button[type="submit"]');
-      assert(submitButton().disabled, 'KVKK onayı olmadan gönderim açık');
-      const kvkk = document.getElementById('answer-kvkk_ack');
+      sectionButton('Dokümanlar').click();
+      await wait(() => document.getElementById('answer-privacy_policy_ack'), 'Onay alanları açılmadı');
+      const submitButton = () => document.getElementById('answer-privacy_policy_ack').closest('form').querySelector('button[type="submit"]');
+      assert(submitButton().disabled, 'Onaylar olmadan gönderim açık');
+      assert(!document.getElementById('answer-kvkk_ack'), 'Kaldırılan KVKK alanı gösteriliyor');
       const privacy = document.getElementById('answer-privacy_policy_ack');
       const terms = document.getElementById('answer-terms_ack');
-      assert(!!(kvkk.compareDocumentPosition(privacy) & Node.DOCUMENT_POSITION_FOLLOWING) && !!(privacy.compareDocumentPosition(terms) & Node.DOCUMENT_POSITION_FOLLOWING), 'Onaylar KVKK altında doğru sırada değil');
+      assert(!!(privacy.compareDocumentPosition(terms) & Node.DOCUMENT_POSITION_FOLLOWING), 'İki onay doğru sırada değil');
       for (const agreement of form.agreements) {
         const link = document.getElementById(`question-${agreement.id}`).querySelector('button');
         const locationBefore = window.location.href;
@@ -203,32 +191,27 @@ export default function EntrepreneurFormTest() {
         await wait(() => document.activeElement === link && document.body.style.overflow !== 'hidden', 'Pencere kapanınca odak veya kaydırma geri yüklenmedi');
         assert(!document.getElementById(`answer-${agreement.id}`).checked, 'Onay otomatik işaretlenmiş');
       }
-      await wait(() => !document.getElementById('answer-kvkk_ack').disabled, 'Onay alanı yüklenmedi');
-      kvkk.click();
+      await wait(() => !privacy.disabled, 'Onay alanı yüklenmedi');
+      privacy.click();
       await pause(50);
       checkProgress(3);
-      assert(submitButton().disabled, 'Sadece KVKK ile gönderim açık');
-      privacy.click();
-      await pause(50);
-      checkProgress(4);
       assert(submitButton().disabled, 'Kullanım şartları olmadan gönderim açık');
       terms.click();
-      await wait(() => !submitButton().disabled, 'Üç onayla gönderim açılmadı');
-      checkProgress(5);
-      assert(sectionButton('KVKK').textContent.includes('3/3 zorunlu alan tamamlandı'), 'KVKK bölümünde diğer zorunlu onaylar sayılmadı');
+      await wait(() => !submitButton().disabled, 'İki onayla gönderim açılmadı');
+      checkProgress(4);
+      assert(sectionButton('Dokümanlar').textContent.includes('2/2 zorunlu alan tamamlandı'), 'Son bölümde iki onay sayılmadı');
       privacy.click();
       await pause(50);
-      checkProgress(4);
+      checkProgress(3);
       assert(submitButton().disabled, 'Gizlilik onayı kaldırıldığında gönderim açık');
       privacy.click();
       await wait(() => !submitButton().disabled, 'Yeniden onayla gönderim açılmadı');
       submitButton().click();
       await wait(() => summaryToggle(), 'Gönderim özeti açılmadı');
-      assert(server.answers.kvkk_ack === true, 'KVKK işareti kaydedilmedi');
+      assert(server.answers.kvkk_ack === undefined, 'Kaldırılan KVKK için onay üretildi');
       assert(server.answers.company_founded === '2024-02-29', 'Seçilen tarih kayıtta korunmadı');
       assert(server.answers.privacy_policy_ack === true && server.answers.terms_ack === true, 'Gizlilik ve kullanım onayları kaydedilmedi');
       assert(server.status === 'submitted', 'Başvuru gönderilmedi');
-      checkProgress(5);
       assert(!server.documents.length, 'Belgesiz başvuru testi evrak içeriyor');
       assert(!summaryOpen(), 'Özet kapalı değil');
       assert(!sessionStorage.getItem('entrepreneur-draft:qa-draft-user'), 'Gönderimden sonra taslak kaldı');
@@ -261,60 +244,40 @@ export default function EntrepreneurFormTest() {
       await closePdf();
       summaryToggle().click();
       await wait(() => summaryOpen(), 'Başvuru detayları açılmadı');
-      sectionButton('İletişim').click();
-      await wait(() => field(), 'Gönderilen yanıtlar görüntülenemedi');
-      assert(field().disabled && field().value === server.answers.venture_name, 'Gönderilen başvuru salt okunur görüntülenmedi');
+      const details = document.getElementById(summaryToggle().getAttribute('aria-controls'));
+      assert(details.textContent.includes(server.answers.venture_name) && !details.querySelector('input'), 'Gönderilen başvuru salt okunur görüntülenmedi');
       summaryToggle().click();
       assert(!summaryOpen(), 'Başvuru detayları kapatılamadı');
 
-      setResult('RUNNING: entrepreneur entry status');
-      const entry = () => document.querySelector('.entrepreneur-card');
-      const continueLink = () => entry()?.textContent.includes('Başvuruya Devam Et');
-      const viewLink = () => entry()?.querySelector('a.entrepreneur-view-button');
-      const remountEntry = async () => {
-        setScreen('none');
-        await wait(() => !entry() && !summaryToggle(), 'Önceki ekran kapatılamadı');
-        setScreen('entry');
-      };
-      setScreen('entry');
-      await wait(() => entry()?.textContent.includes('Başvurunuz iletildi'), 'Gönderilmiş başvuru bilgisi girişimci sayfasında gösterilmedi');
-      assert(revoked.has(downloads[1].href), 'Özetten ayrılırken PDF geçici adresi temizlenmedi');
-      assert(pdfButton()?.textContent.includes('PDF Önizle'), 'Gönderim kartında ikincil PDF düğmesi yok');
-      pdfButton().click();
-      await wait(() => pdfLink(), 'Gönderim kartından PDF önizleme açılmadı');
-      assert(downloads.length === 2, 'Gönderim kartı PDF dosyasını otomatik indirdi');
-      pdfLink().click();
-      assert(downloads.length === 3, 'Önizleme içindeki İndir çalışmadı');
-      await closePdf();
+      setResult('RUNNING: entrepreneur navigation');
       holdDownload = true; releaseDownload = null; pdfButton().click();
       await wait(() => releaseDownload && pdfDialog()?.open, 'İptal testi için PDF isteği başlamadı');
-      await remountEntry();
-      await wait(() => cancelledDownloads === 1 && pdfButton(), 'Sayfadan ayrılınca bekleyen PDF isteği iptal edilmedi');
-      assert(!continueLink(), 'Gönderilmiş başvuruda devam düğmesi kaldı');
-      assert(viewLink()?.getAttribute('href') === '/girisimciler/basvuru', 'Başvuruyu görüntüle düğmesi yanlış sayfaya gidiyor');
-      await login('test@example.com', 'fixture-only');
-      await remountEntry();
-      await wait(() => entry()?.textContent.includes('Başvurunuz iletildi'), 'Tekrar girişte gönderilmiş başvuru durumu kayboldu');
-
-      server = { ...server, status: 'draft' };
-      holdGet = true;
-      releaseGet = null;
-      await remountEntry();
-      await wait(() => releaseGet, 'Başvuru durumu sorgulanmadı');
-      assert(!continueLink() && !entry().textContent.includes('Başvurunuz iletildi'), `Durum sorgulanırken eski veya varsayılan durum gösterildi: ${entry()?.textContent}`);
-      holdGet = false;
-      releaseGet();
-      await wait(() => continueLink(), 'Taslak başvuruda devam düğmesi gösterilmedi');
-      assert(!pdfButton(), 'Taslak giriş ekranında PDF düğmesi kaldı');
-      server = null;
-      await remountEntry();
-      await wait(() => continueLink(), 'Başvurusu olmayan hesapta devam düğmesi gösterilmedi');
-      assert(!pdfButton(), 'Başvurusu olmayan hesapta PDF düğmesi var');
-      failGet = true;
-      await remountEntry();
-      await wait(() => entry()?.textContent.includes('Başvuru durumunuz şu anda alınamadı'), 'Durum hatası gösterilmedi');
-      assert(!continueLink() && viewLink(), 'Durum hatasında yanlış devam düğmesi gösterildi veya görüntüleme engellendi');
-      setResult('PASS: form autosave/recovery, required progress/agreements, inline privacy/terms reading without navigation or auto-consent, modal focus/scroll and close recovery, document-free submission, readonly summary expand/collapse, own PDF preview before download in summary and submitted entry, modal loading/error/retry, URL cleanup and cancelled request, submitted entry and re-login, draft/new entry, pending lookup and failed lookup');
+      const redirects = [];
+      router.replace = async target => { redirects.push(target); return true; };
+      for (const next of [server, { ...server, status: 'draft' }, null]) {
+        server = next;
+        setScreen('none');
+        await wait(() => !document.querySelector('.entrepreneur-section') && !summaryToggle(), 'Önceki ekran kapatılamadı');
+        const count = redirects.length;
+        setScreen('entry');
+        await wait(() => redirects.length > count, 'Oturum açıkken başvuruya yönlenmedi');
+        assert(redirects.at(-1) === '/girisimciler/basvuru', 'Başvuru yönlendirmesi yanlış');
+        assert(!document.body.textContent.includes('ilk adımı attınız') && !document.body.textContent.includes('Başvuru dosyanız'), 'Kaldırılan karşılama ekranı hâlâ gösteriliyor');
+      }
+      assert(cancelledDownloads === 1, 'Ayrılırken bekleyen PDF isteği iptal edilmedi');
+      let pushes = 0;
+      router.push = async () => { pushes++; return true; };
+      router.pathname = '/girisimciler/basvuru'; router.asPath = '/girisimciler/basvuru?test=preserve';
+      setScreen('none');
+      await wait(() => !document.querySelector('.entrepreneur-section'), 'Menü kontrolü için ekran kapanmadı');
+      setScreen('entry');
+      const menu = () => [...document.querySelectorAll('a.nav-link')].find(link => link.textContent.trim() === 'Girişimciler');
+      await wait(() => menu(), 'Girişimciler menüsü açılmadı');
+      const beforeUrl = window.location.href;
+      assert(menu().getAttribute('href') === router.asPath, 'Açık sayfanın sorgusu korunmadı');
+      menu().click(); await pause(50);
+      assert(pushes === 0 && window.location.href === beforeUrl, 'Üst menü mevcut sayfayı yeniden açtı');
+      setResult('PASS: form autosave/recovery, exactly two required agreements, inline reading, document-free submission, readonly summary, PDF preview/error/retry/cleanup, signed-in entry redirects and current-page menu preservation');
     })().catch(error => { if (!cancelled) setResult(`FAIL: ${error.message}`); });
     return () => {
       cancelled = true;
@@ -322,6 +285,7 @@ export default function EntrepreneurFormTest() {
       entrepreneurAPI.getMyApplication = originals.get; entrepreneurAPI.saveApplication = originals.save; window.confirm = originals.confirm;
       entrepreneurAPI.downloadApplication = originals.download; HTMLAnchorElement.prototype.click = originals.linkClick; URL.revokeObjectURL = originals.revoke;
       messagingAPI.getUnreadCount = originals.unread;
+      router.replace = originals.replace; router.push = originals.push; router.pathname = originals.pathname; router.asPath = originals.asPath;
     };
   }, []);
   return <><pre id="qa-result">{result}</pre><Link id="qa-away" href={`${router.pathname}?away=1`}>Başka sayfa</Link>{router.query.away ? <p>Başka sayfa</p> : user?._id === 'qa-draft-user' && (screen === 'form' ? <EntrepreneurApplicationForm /> : screen === 'entry' ? <Entrepreneurs /> : null)}</>;

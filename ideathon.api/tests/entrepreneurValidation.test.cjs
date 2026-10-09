@@ -3,10 +3,10 @@ const assert = require('node:assert/strict');
 const template = require('../src/config/entrepreneurForm');
 const { validateAnswers, validDocument } = require('../src/services/entrepreneurValidation');
 
-test('Word set contains 21 unique questions and its configured question types', () => {
-  assert.equal(template.questions.length, 21);
-  assert.equal(new Set(template.questions.map(q => q.id)).size, 21);
-  assert.deepEqual([...new Set(template.questions.map(q => q.type))].sort(), ['consent', 'file', 'singleChoice', 'text', 'textarea']);
+test('Application contains 20 unique questions and its configured question types', () => {
+  assert.equal(template.questions.length, 20);
+  assert.equal(new Set(template.questions.map(q => q.id)).size, 20);
+  assert.deepEqual([...new Set(template.questions.map(q => q.type))].sort(), ['file', 'singleChoice', 'text', 'textarea']);
   for (const question of template.questions) assert.ok(template.sections.some(section => section.id === question.section));
 });
 
@@ -86,7 +86,7 @@ test('upload validation checks file contents, extension and MIME type together',
 });
 
 test('each required agreement rejects missing, false and truthy nonboolean answers independently', () => {
-  const ids = ['kvkk_ack', 'privacy_policy_ack', 'terms_ack'];
+  const ids = ['privacy_policy_ack', 'terms_ack'];
   const accepted = Object.fromEntries(ids.map(id => [id, true]));
   for (const id of ids) {
     for (const value of [undefined, false, 'true', ['accepted'], 1]) {
