@@ -1,5 +1,11 @@
 # Ideathon — agent devir notu
 
+## 9 Ekim 2026 — şifre sıfırlama isteğinde koşullu bildirim
+
+Frontend Şifremi Unuttum ekranı artık sunucunun koşullu yanıtını hem bildirimde hem sonuç kartında gösterir; mesaj gelmezse “Bu e-posta adresiyle kayıtlı aktif bir hesap varsa şifre sıfırlama kodu gönderildi.” kullanılır. Kesin gönderim bildiren başlık “Talebiniz Alındı” olarak değiştirildi; giriş açıklaması ve işlem metni de kod isteme akışına uyarlandı. E-posta aktarımı ve sonraki ekrana yönlendirme korunur. Admin/jüri/mentor formlarının yedek mesajları aynı koşullu ifadeye, mentor açıklaması kod isteme ifadesine getirildi. API davranışı değişmedi: kayıtlı aktif hesap yoksa e-posta gönderilmez.
+
+Değişen beş JS/JSX dosyası ESLint'ten hatasız geçti; diff kontrolü uygulandı. Gerçek e-posta gönderimi, tarayıcı testi, build veya yük testi çalıştırılmadı. Sunucuya bağlanılmadı; canlıda değişiklik ve push yapılmadı.
+
 ## 9 Ekim 2026 — havuzda başvuru türü ve durum filtreleri
 
 Önceki girişimci/e-posta/arayüz değişiklikleri, mavi Çıkış düğmesi dahil `0f40741` commit'iyle `iskojk/IdeathonAll` main dalına pushlandı. Ardından kullanıcı girişimci havuzunda başvuru türü ve durum filtrelerini istedi.

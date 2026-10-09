@@ -41,7 +41,7 @@ export default function AuthForgotPassword() {
       
       
       if (res.success) {
-        toast.success(res.message || "Şifre sıfırlama kodu email adresinize gönderildi");
+        toast.success(res.message || "Bu e-posta adresiyle kayıtlı aktif bir hesap varsa şifre sıfırlama kodu gönderildi.");
         // Reset password sayfasına yönlendir
         router.push(`/auth/reset-password?email=${encodeURIComponent(email.trim().toLowerCase())}`);
       } else {

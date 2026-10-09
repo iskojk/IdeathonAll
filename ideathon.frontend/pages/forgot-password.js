@@ -17,7 +17,7 @@ export default function ForgotPassword() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
   const emailEdited = useRef(false)
 
   useEffect(() => {
@@ -27,7 +27,7 @@ export default function ForgotPassword() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (loading || success) return
+    if (loading || successMessage) return
     const requestedEmail = normalizeRecoveryEmail(email)
     
     // Validation
@@ -51,8 +51,9 @@ export default function ForgotPassword() {
       if (response.success) {
         setEmail(requestedEmail)
         rememberRecoveryEmail(requestedEmail)
-        setSuccess(true)
-        toast.success('Şifre sıfırlama kodu email adresinize gönderildi')
+        const message = response.message || 'Bu e-posta adresiyle kayıtlı aktif bir hesap varsa şifre sıfırlama kodu gönderildi.'
+        setSuccessMessage(message)
+        toast.success(message)
         
         // 2 saniye sonra reset-password sayfasına yönlendir
         setTimeout(() => {
@@ -74,18 +75,18 @@ export default function ForgotPassword() {
         <div className="auth-box">
           <div className="auth-header">
             <h1>Şifremi Unuttum</h1>
-            <p>Email adresinize şifre sıfırlama kodu göndereceğiz</p>
+            <p>Hesabınızın e-posta adresini girerek şifre sıfırlama kodu isteyebilirsiniz.</p>
           </div>
 
           {error && <ErrorMessage message={error} />}
 
-          {success ? (
+          {successMessage ? (
             <div className="success-message">
               <div className="success-icon">✓</div>
-              <h3>Kod Gönderildi!</h3>
+              <h3>Talebiniz Alındı</h3>
+              <p>{successMessage}</p>
               <p>
-                <strong>{email}</strong> adresine şifre sıfırlama kodu gönderildi.
-                Lütfen email kutunuzu kontrol edin.
+                Lütfen <strong>{email}</strong> adresinin gelen kutusunu ve spam klasörünü kontrol edin.
               </p>
               <p className="redirect-info">
                 Şifre sıfırlama sayfasına yönlendiriliyorsunuz...
@@ -115,7 +116,7 @@ export default function ForgotPassword() {
                 disabled={loading}
                 aria-busy={loading}
               >
-                <AuthButtonLabel busy={loading} busyText="Kod gönderiliyor...">Kod Gönder</AuthButtonLabel>
+                <AuthButtonLabel busy={loading} busyText="İstek işleniyor...">Kod Gönder</AuthButtonLabel>
               </button>
 
               <div className="auth-links">

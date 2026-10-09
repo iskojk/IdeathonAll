@@ -18,7 +18,7 @@ export default function AuthForgotPassword() {
     setLoading(true);
     try {
       const res = await sendForgotPassword(email.trim().toLowerCase());
-      toast.success(res.message || "Doğrulama kodu gönderildi.");
+      toast.success(res.message || "Bu e-posta adresiyle kayıtlı aktif bir hesap varsa şifre sıfırlama kodu gönderildi.");
       router.push(`/auth/reset-password?email=${encodeURIComponent(email.trim().toLowerCase())}`);
     } catch (error) {
       toast.error(error.response?.data?.message || "Bir hata oluştu!");

@@ -108,7 +108,7 @@ export default function ForgotPassword() {
                 mb: 1
               }}
             >
-              Hesabınızla ilişkili e-posta adresini girin. Size şifrenizi sıfırlamanız için 6 haneli bir doğrulama kodu göndereceğiz.
+              Hesabınızla ilişkili e-posta adresini girerek şifre sıfırlama kodu isteyebilirsiniz.
             </Typography>
             <AuthForgotPassword />
           </Box>
@@ -117,5 +117,4 @@ export default function ForgotPassword() {
     </PageContainer>)
   );
 };
-
 
