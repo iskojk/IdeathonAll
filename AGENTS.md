@@ -1,5 +1,19 @@
 # Ideathon — agent devir notu
 
+## 9 Ekim 2026 — Taslaklarım üzerinden ekleme ve silme
+
+Taslaklarım penceresinin üstüne + Yeni Taslak, aktif listede her Düzenle düğmesinin yanına erişilebilir çöp kutusu düğmesi eklendi. Yeni Taslak ana sayfadaki aynı boş taslak akışını kullanır; kaydedilmemiş değişiklik varsa mevcut onay korunur, vazgeçilirse liste ve düzenleme açık kalır. Onaylanınca liste kapanır ve boş editör açılır; kayıt Formu Kaydet ile yapılır.
+
+Liste silmesi mevcut revizyon kontrollü silme API'sini ve ortak onay penceresini kullanır; başarıda liste yenilenir, son sayfa boşaldıysa geçerli son sayfa yüklenir. Başka bir taslağın silinmesi açık düzenlemeyi korur; açık taslak siliniyorsa kaydedilmemiş değişiklik uyarısı gösterilir ve editör boş seçim ekranına döner. Silinenler/Geri Al, sürüm geçmişi ve yayım koruması sürer. API/veritabanı değişmedi.
+
+Doğrulama: genişletilmiş verify:entrepreneur-drafts gerçek React editörü ve yalnızca bellekteki API ile liste silme/vazgeçme/409 hatası/geri alma, başka açık düzenlemenin korunması, seçili taslağın silinmesi, yayın ve sürüm geçmişi koruması, listeden yeni boş taslak açma/kaydetme ve kaydedilmemiş değişiklikte yeni taslaktan vazgeçme/onay dahil geçti. Önceki tam taslak/sıralama/çıkış regresyonları da geçti. JSX ve diff kontrolü geçti; yerel servisler sağlıklı. Gerçek taslak kaydı/silme/yayımı veya push yapılmadı. Önceki kaynaklar .local/ui-checkpoints/draft-library-actions-2026-10-09/ içinde Git dışında korunur.
+
+## 9 Ekim 2026 — soru taslağından çıkış
+
+Üst kontrol kartına Taslaktan Çık düğmesi eklendi. Tıklayınca kaydedilmemiş değişikliklerin kaybolacağını açıklayan dialog açılır. Düzenlemeye Devam Et / Escape / dışarı tıklama yalnızca dialogu kapatır, düzenlemeyi korur. Kaydetmeden Çık, editörün seçim/içerik/geçmiş/kayıt/yayın dialog durumlarını temizleyip aynı girişimci soru seti sayfasının başlangıçtaki boş seçim ekranına döner; kaydırma üste ve odak Taslaklarım'a alınır. Kayıtlı taslak/sürüm/yayım değiştirilmez, yeni kayıt oluşturulmaz. İşlem sürerken düğmeler kapalıdır. API/veritabanı değişikliği yoktur.
+
+Doğrulama: JSX ve git diff --check geçti; soru seti sayfası HTTP 200. Genişletilmiş verify:entrepreneur-drafts gerçek editör ve yalnızca bellekte API ile kayıtlı/değişmiş/yeni taslakta çıkış, onaydan önce uyarı, vazgeçme/Escape içerik koruması, boş ekrana dönüş, yeniden açılışta son kayıt, çıkışta taslak/sürüm/yayın ve yazma sayısının değişmemesi dahil geçti. Mevcut tam taslak/sıralama/yayın regresyonları da geçti. Gerçek taslak kaydı/yayımı/silme veya push yapılmadı. Önceki kaynaklar .local/ui-checkpoints/exit-question-draft-2026-10-09/ içinde Git dışında korunur.
+
 ## 8 Ekim 2026 — yayın kimliği/geçmişi ve taslak sürüm göstergeleri
 
 Soru setinde Yayında alanı, taslak listesinde yayın işareti, taslak/sürüm adını ve yerine geçeceği yayını gösteren onay, sayfalı Yayın Geçmişi eklendi. Güncel yayın metaverisi settings.publication içinde; eski yayın metaverisi yeni yayın öncesi EntrepreneurFormPublication koleksiyonuna arşivlenir. Global revizyon CAS kontrolü ve eski yayın uçları korunur; kaynağı tutulmamış eski yayına tahmini taslak/sürüm atanmaz. Taslak yeniden adlandırma, düzenleme ve silme yayındaki kaynak adını/sürümünü değiştirmez. Yeni GET /api/entrepreneurs/admin/form/publications yalnızca süperadmine açıktır. Şema geriye uyumludur, mevcut içerik için toplu geçiş yapılmadı.
