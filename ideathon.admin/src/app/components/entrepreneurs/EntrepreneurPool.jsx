@@ -10,7 +10,7 @@ import BlankCard from '@/app/components/shared/BlankCard';
 import { entrepreneurAdminAPI, entrepreneurError } from '@/utils/api/entrepreneurs';
 import { formatDate } from './format';
 import EntrepreneurPoolEditor from './EntrepreneurPoolEditor';
-import { reviewStatus } from './status';
+import { reviewStatus, reviewStatuses } from './status';
 
 export default function EntrepreneurPool() {
   const router = useRouter();
@@ -18,6 +18,8 @@ export default function EntrepreneurPool() {
   const [search, setSearch] = useState('');
   const [query, setQuery] = useState('');
   const [searchField, setSearchField] = useState('all');
+  const [source, setSource] = useState('all');
+  const [reviewFilter, setReviewFilter] = useState('all');
   const [searchOpen, setSearchOpen] = useState(false);
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
@@ -48,15 +50,15 @@ export default function EntrepreneurPool() {
     const controller = new AbortController();
     setLoading(true);
     setError('');
-    entrepreneurAdminAPI.list({ page: page + 1, limit, search: query, searchField, sort, view }, controller.signal)
-      .then(data => { if (!controller.signal.aborted) { setResult({ ...data, query, searchField, view, page }); const lastPage = Math.max(0, Math.ceil(data.pagination.total / limit) - 1); if (page > lastPage) setPage(lastPage); } })
+    entrepreneurAdminAPI.list({ page: page + 1, limit, search: query, searchField, source, reviewStatus: reviewFilter, sort, view }, controller.signal)
+      .then(data => { if (!controller.signal.aborted) { setResult({ ...data, query, searchField, source, reviewFilter, sort, view, page, limit }); const lastPage = Math.max(0, Math.ceil(data.pagination.total / limit) - 1); if (page > lastPage) setPage(lastPage); } })
       .catch(async err => {
         const message = await entrepreneurError(err, 'Başvurular yüklenemedi.');
         if (!controller.signal.aborted) setError(message);
       })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [page, limit, query, searchField, sort, view, refresh]);
+  }, [page, limit, query, searchField, source, reviewFilter, sort, view, refresh]);
 
   async function changeMembership(application, restore = false) {
     if (!canManage || busyAction) return;
@@ -71,7 +73,8 @@ export default function EntrepreneurPool() {
   }
 
   const searchLabels = { all: 'Ad-soyad, e-posta veya girişim adı ara', name: 'Ad-soyad ara', email: 'E-posta ara', venture: 'Girişim adı ara' };
-  const resultsCurrent = result.query === search.trim() && result.searchField === searchField && result.view === view && result.page === page;
+  const hasFilters = !!search.trim() || source !== 'all' || reviewFilter !== 'all';
+  const resultsCurrent = result.query === search.trim() && result.searchField === searchField && result.source === source && result.reviewFilter === reviewFilter && result.sort === sort && result.view === view && result.page === page && result.limit === limit;
   const searchPending = !error && (loading || !resultsCurrent);
   const suggestions = resultsCurrent && !loading && !error ? result.data.slice(0, 8) : [];
 
@@ -92,7 +95,7 @@ export default function EntrepreneurPool() {
       <Tabs value={view} onChange={(_, next) => { setView(next); setPage(0); }} aria-label="Girişimci havuzu görünümü" sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}>
         <Tab value="active" label="Havuz" /><Tab value="archived" label="Kaldırılanlar" />
       </Tabs>
-      <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} mb={3} alignItems="flex-start">
+      <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} mb={2} alignItems="flex-start">
         <TextField select label="Arama alanı" size="small" value={searchField} onChange={event => { setSearchField(event.target.value); setPage(0); }} sx={{ minWidth: 160, width: { xs: '100%', md: 160 } }}>
           <MenuItem value="all">Tüm alanlar</MenuItem><MenuItem value="name">Ad-soyad</MenuItem><MenuItem value="email">E-posta</MenuItem><MenuItem value="venture">Girişim adı</MenuItem>
         </TextField>
@@ -100,13 +103,23 @@ export default function EntrepreneurPool() {
           const { key, ...optionProps } = props;
           return <Box component="li" key={key} {...optionProps} sx={{ '&:not(:last-child)': { borderBottom: 1, borderColor: 'divider' }, py: '10px !important' }}><Box sx={{ minWidth: 0, overflowWrap: 'anywhere' }}><Typography fontWeight={600}>{option.ventureName || 'Girişim başvurusu'}</Typography><Typography variant="body2" color="text.secondary">{option.contactName || '—'} · {option.contactEmail || option.applicant?.email || '—'}</Typography>{searchField === 'email' && option.applicant?.email && option.applicant.email !== option.contactEmail && <Typography variant="caption" color="text.secondary">Kayıtlı e-posta: {option.applicant.email}</Typography>}</Box></Box>;
         }} renderInput={params => <TextField {...params} label={searchLabels[searchField]} size="small" helperText="Yazarken sonuçlar güncellenir. Bir kayıt seçerek detayını açabilirsiniz." inputProps={{ ...params.inputProps, maxLength: 150 }} InputProps={{ ...params.InputProps, startAdornment: <InputAdornment position="start"><IconSearch size={18} /></InputAdornment>, endAdornment: <>{searchPending && search.trim() ? <CircularProgress size={16} /> : null}{params.InputProps.endAdornment}</> }} />} sx={{ minWidth: 0 }} />
-        <TextField select label="Sıralama" size="small" value={sort} onChange={event => { setSort(event.target.value); setPage(0); }} sx={{ minWidth: 180 }}>
+        <TextField select label="Sıralama" size="small" value={sort} onChange={event => { setSort(event.target.value); setPage(0); }} sx={{ minWidth: 180, width: { xs: '100%', md: 180 } }}>
           <MenuItem value="newest">En yeni başvuru</MenuItem><MenuItem value="oldest">En eski başvuru</MenuItem>
         </TextField>
       </Stack>
-      {error ? <Alert severity="error" action={<Button color="inherit" onClick={() => setRefresh(value => value + 1)}>Tekrar dene</Button>}>{error}</Alert> : loading ? <Box py={6} textAlign="center"><CircularProgress aria-label="Başvurular yükleniyor" /></Box> : <>
-        <Typography variant="subtitle2" mb={2} role="status">{result.pagination.total} kayıt{query ? ' bulundu' : ''}</Typography>
-        {!result.data.length ? <Alert severity="info">{query ? 'Aramanızla eşleşen bir girişimci bulunamadı.' : view === 'archived' ? 'Havuzdan kaldırılmış girişimci yok.' : 'Henüz havuzda girişimci yok. Yeni bir kayıt ekleyebilir veya gönderilen başvuruları burada görebilirsiniz.'}</Alert> : <TableContainer>
+      <Stack direction={{ xs: 'column', sm: 'row' }} gap={2} mb={3} flexWrap="wrap" alignItems={{ xs: 'stretch', sm: 'center' }}>
+        <TextField select label="Başvuru Türü" size="small" value={source} onChange={event => { setSource(event.target.value); setPage(0); }} sx={{ width: { xs: '100%', sm: 200 } }}>
+          <MenuItem value="all">Tüm türler</MenuItem><MenuItem value="self">Sistem</MenuItem><MenuItem value="admin">Manuel</MenuItem>
+        </TextField>
+        <TextField select label="Durum" size="small" value={reviewFilter} onChange={event => { setReviewFilter(event.target.value); setPage(0); }} sx={{ width: { xs: '100%', sm: 200 } }}>
+          <MenuItem value="all">Tüm durumlar</MenuItem>
+          {Object.entries(reviewStatuses).map(([value, status]) => <MenuItem key={value} value={value}>{status.label}</MenuItem>)}
+        </TextField>
+        {hasFilters && <Button onClick={() => { setSource('all'); setReviewFilter('all'); setSearch(''); setQuery(''); setSearchOpen(false); setPage(0); }}>Filtreleri temizle</Button>}
+      </Stack>
+      {error ? <Alert severity="error" action={<Button color="inherit" onClick={() => setRefresh(value => value + 1)}>Tekrar dene</Button>}>{error}</Alert> : loading || !resultsCurrent ? <Box py={6} textAlign="center"><CircularProgress aria-label="Başvurular yükleniyor" /></Box> : <>
+        <Typography variant="subtitle2" mb={2} role="status">{result.pagination.total} kayıt{hasFilters ? ' bulundu' : ''}</Typography>
+        {!result.data.length ? <Alert severity="info">{hasFilters ? 'Arama ve filtrelerinizle eşleşen bir girişimci bulunamadı.' : view === 'archived' ? 'Havuzdan kaldırılmış girişimci yok.' : 'Henüz havuzda girişimci yok. Yeni bir kayıt ekleyebilir veya gönderilen başvuruları burada görebilirsiniz.'}</Alert> : <TableContainer>
           <Table aria-label="Girişimci başvuruları" sx={{ minWidth: 960 }}>
             <TableHead><TableRow>
               <TableCell>Girişim Adı</TableCell><TableCell>Başvuran</TableCell><TableCell sx={{ whiteSpace: 'nowrap' }}>Başvuru Tarihi</TableCell><TableCell>Evrak</TableCell><TableCell align="center" sx={{ width: 130, whiteSpace: 'nowrap' }}>Başvuru Türü</TableCell><TableCell align="center" sx={{ width: 140, whiteSpace: 'nowrap' }}>Durum</TableCell><TableCell align="center" sx={{ width: 170, whiteSpace: 'nowrap' }}>İşlem</TableCell>

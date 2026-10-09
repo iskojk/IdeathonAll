@@ -1,5 +1,15 @@
 # Ideathon — agent devir notu
 
+## 9 Ekim 2026 — havuzda başvuru türü ve durum filtreleri
+
+Önceki girişimci/e-posta/arayüz değişiklikleri, mavi Çıkış düğmesi dahil `0f40741` commit'iyle `iskojk/IdeathonAll` main dalına pushlandı. Ardından kullanıcı girişimci havuzunda başvuru türü ve durum filtrelerini istedi.
+
+Havuz ve Kaldırılanlar sekmelerine Başvuru Türü (Tüm türler/Sistem/Manuel) ve Durum (Tümü/İletildi/Görüntülendi/İnceleniyor/İncelendi/Onaylandı/Reddedildi) seçicileri eklendi. Arama ve iki filtre birlikte çalışır; filtre değişimi ilk sayfaya döner. Filtreleri temizle aramayı ve bu iki seçimi sıfırlar. Öneriler/tablo yalnızca güncel arama, tür, durum, sıralama, sekme ve sayfaya ait sonuçları gösterir; önceki istekler iptal edilir.
+
+Liste API'si `source=all|self|admin` ve `reviewStatus=all|...` parametrelerini doğrular; filtreyi toplam/sayfalama öncesi sunucuda uygular. Eski kayıtlardaki eksik/null source ve reviewStatus alanları ekrandaki Sistem/İletildi varsayımlarıyla eşleşir. Geçersiz veya çoklu değerler 400 döner. Başvurulara/veritabanı şemasına yazma ya da geçiş yapılmadı.
+
+Doğrulama: mevcut yerel verilerle yalnızca okuma yapan 42 filtre birleşimi, dört ikinci-sayfa kontrolü, arama+tür+durum+sıralama birlikteliği ve 12 geçersiz parametre reddi geçti. Admin JSX ESLint, API/betik sözdizimi ve diff kontrolü geçti. İzole havuz regresyon betiğine filtre/sayfalama/arama/arşiv ve hata senaryoları eklendi; bu geniş kapsamlı betik ve tarayıcı testi çalıştırılmadı. Yalnızca workspace API'si PID/başlangıç/dizin/port doğrulamasıyla yeniden başlatıldı, sağlık HTTP 200. Disk yaklaşık 1,6 GB; yük testleri durdurulmuş olarak kalır.
+
 ## 9 Ekim 2026 — tek bilgi kartı, düzenlemeden çıkış ve kullanıcı metinleri
 
 Push öncesi kullanıcı isteğiyle Çıkış düğmesi mavi zemin/beyaz yazıyla belirginleştirildi; hover rengi koyulaşır, ölçüleri aynı kalır. CSS ayrıştırması ve diff kontrolü geçti.

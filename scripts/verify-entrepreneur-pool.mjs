@@ -99,6 +99,19 @@ try {
   assert.equal(record.privacy, undefined);
   assert.equal(await User.countDocuments({ email: contact.email }), 0, 'Manuel kayıt hesap açmamalı');
   assert.equal((await request(`${base}?search=${marker}`, admin.token)).pagination.total, 2);
+  const filteredPool = `${base}?search=${marker}&source=admin&reviewStatus=submitted`;
+  const firstFilteredPage = await request(`${filteredPool}&limit=1&page=1`, admin.token);
+  const secondFilteredPage = await request(`${filteredPool}&limit=1&page=2`, admin.token);
+  assert.equal(firstFilteredPage.pagination.total, 2);
+  assert.equal(firstFilteredPage.pagination.pages, 2);
+  assert.equal(firstFilteredPage.data.length, 1);
+  assert.equal(secondFilteredPage.data.length, 1);
+  assert.notEqual(firstFilteredPage.data[0]._id, secondFilteredPage.data[0]._id);
+  assert.equal((await request(`${base}?search=${marker}&source=self`, admin.token)).pagination.total, 0);
+  assert.equal((await request(`${base}?search=${marker}&source=admin&reviewStatus=approved`, admin.token)).pagination.total, 0);
+  for (const filter of ['source=invalid', 'source=self&source=admin', 'reviewStatus=invalid', 'reviewStatus=submitted&reviewStatus=viewed']) {
+    await request(`${base}?${filter}`, admin.token, 'GET', undefined, 400);
+  }
   // Field filters must remain separate and regex metacharacters are plain text.
   for (const searchField of ['all', 'venture']) assert.equal((await request(`${base}?search=${marker.toLowerCase()}&searchField=${searchField}`, admin.token)).pagination.total, 2);
   for (const searchField of ['name', 'email']) assert.equal((await request(`${base}?search=${marker}&searchField=${searchField}`, admin.token)).pagination.total, 0);
@@ -130,6 +143,8 @@ try {
   assert.ok(record.archivedAt);
   assert.equal((await request(`${base}?search=${marker}`, admin.token)).pagination.total, 1);
   assert.equal((await request(`${base}?view=archived&search=${marker}`, admin.token)).pagination.total, 1);
+  assert.equal((await request(`${filteredPool}&view=archived`, admin.token)).pagination.total, 1);
+  assert.equal((await request(`${base}?view=archived&search=${marker}&source=self`, admin.token)).pagination.total, 0);
   assert.ok(await Document.exists({ _id: document._id }), 'Havuzdan çıkarma evrakı silmemeli');
   await request(`${base}/${record._id}`, superadmin.token, 'PUT', { revision: record.revision, contact }, 404);
   record = (await request(`${base}/${record._id}/restore`, superadmin.token, 'POST', { revision: record.revision })).data;
@@ -161,6 +176,9 @@ try {
   upload.append('file', new Blob([Buffer.from('%PDF-1.4\nQA')], { type: 'application/pdf' }), 'qa-sunum.pdf');
   own = (await request('/entrepreneurs/documents/pitch_deck', self.token, 'POST', upload, 201)).data.application;
   own = (await request('/entrepreneurs/my', self.token, 'PUT', { answers: selfAnswers, revision: own.revision, formVersion: selfForm.version, submit: true })).data.application;
+  const selfFiltered = await request(`${base}?search=${marker}&source=self&reviewStatus=submitted`, admin.token);
+  assert.equal(selfFiltered.pagination.total, 1);
+  assert.equal(selfFiltered.data[0]._id, own._id);
   const beforeEdit = (await request(`${base}/${own._id}`, admin.token)).data;
   let edited = (await request(`${base}/${own._id}`, superadmin.token, 'PUT', { revision: beforeEdit.revision, contact: { ...contact, email: self.user.email, ventureName: `${marker}-self-updated` }, answers: { stage: 'Teknik pilot' } })).data;
   assert.deepEqual(edited.privacy, beforeEdit.privacy);

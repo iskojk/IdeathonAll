@@ -5,6 +5,7 @@ const User = require('../models/User');
 const { getEntrepreneurForm } = require('./entrepreneurFormSource');
 const { validateContact, updateAnswers, editableQuestions } = require('./entrepreneurPoolManagement');
 const { validateAnswers } = require('./entrepreneurValidation');
+const { reviewStatuses } = require('./entrepreneurWorkflow');
 
 function fail(status, message) { throw Object.assign(new Error(message), { status }); }
 function validId(id) { return typeof id === 'string' && /^[a-f\d]{24}$/i.test(id); }
@@ -25,8 +26,16 @@ exports.list = async (query) => {
   if (!['newest', 'oldest'].includes(sort)) fail(400, 'Sıralama seçimi geçersiz.');
   const view = query.view || 'active';
   if (!['active', 'archived'].includes(view)) fail(400, 'Havuz görünümü geçersiz.');
+  const source = query.source === undefined ? 'all' : query.source;
+  if (!['all', 'self', 'admin'].includes(source)) fail(400, 'Başvuru türü geçersiz.');
+  const reviewStatus = query.reviewStatus === undefined ? 'all' : query.reviewStatus;
+  if (!['all', ...Object.keys(reviewStatuses)].includes(reviewStatus)) fail(400, 'Başvuru durumu geçersiz.');
+  const match = { status: 'submitted', archivedAt: view === 'archived' ? { $ne: null } : null };
+  // Older records display as Sistem / İletildi when these fields are absent.
+  if (source !== 'all') match.source = source === 'self' ? { $in: ['self', null] } : source;
+  if (reviewStatus !== 'all') match.reviewStatus = reviewStatus === 'submitted' ? { $in: ['submitted', null] } : reviewStatus;
   const pipeline = [
-    { $match: { status: 'submitted', archivedAt: view === 'archived' ? { $ne: null } : null } },
+    { $match: match },
     { $lookup: { from: User.collection.name, localField: 'userId', foreignField: '_id', pipeline: [{ $project: { name: 1, email: 1, phone: 1 } }], as: 'applicant' } },
     { $unwind: { path: '$applicant', preserveNullAndEmptyArrays: true } },
     { $set: { contactName: { $ifNull: ['$answers.full_name', { $trim: { input: { $concat: [
