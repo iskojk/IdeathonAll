@@ -1,12 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { authAPI } from '@/lib/api'
 import { toast } from '@/components/Toast'
 import Layout from '@/components/Layout'
-import Loading from '@/components/Loading'
+import AuthButtonLabel from '@/components/AuthButtonLabel'
 import ErrorMessage from '@/components/ErrorMessage'
 import { authFlowLinks } from '@/lib/authRoutes'
+import { normalizeRecoveryEmail, readRecoveryEmail, rememberRecoveryEmail } from '@/lib/passwordRecoveryEmail'
 
 export default function ForgotPassword() {
   const router = useRouter()
@@ -17,18 +18,26 @@ export default function ForgotPassword() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const emailEdited = useRef(false)
+
+  useEffect(() => {
+    if (!router.isReady || emailEdited.current) return
+    setEmail(normalizeRecoveryEmail(router.query.email) || readRecoveryEmail())
+  }, [router.isReady, router.query.email])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (loading || success) return
+    const requestedEmail = normalizeRecoveryEmail(email)
     
     // Validation
-    if (!email) {
+    if (!requestedEmail) {
       setError('Email adresi gereklidir')
       return
     }
 
     const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(requestedEmail)) {
       setError('Geçerli bir email adresi giriniz')
       return
     }
@@ -37,15 +46,17 @@ export default function ForgotPassword() {
     setLoading(true)
 
     try {
-      const response = await authAPI.forgotPassword(email)
+      const response = await authAPI.forgotPassword(requestedEmail)
       
       if (response.success) {
+        setEmail(requestedEmail)
+        rememberRecoveryEmail(requestedEmail)
         setSuccess(true)
         toast.success('Şifre sıfırlama kodu email adresinize gönderildi')
         
         // 2 saniye sonra reset-password sayfasına yönlendir
         setTimeout(() => {
-          router.push(authLinks.resetPassword(email))
+          router.push(authLinks.resetPassword(requestedEmail))
         }, 2000)
       }
     } catch (err) {
@@ -90,7 +101,7 @@ export default function ForgotPassword() {
                   type="email"
                   id="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { emailEdited.current = true; setEmail(e.target.value) }}
                   placeholder="ornek@email.com"
                   disabled={loading}
                   autoComplete="email"
@@ -102,8 +113,9 @@ export default function ForgotPassword() {
                 type="submit"
                 className="btn-primary"
                 disabled={loading}
+                aria-busy={loading}
               >
-                {loading ? <Loading size="small" /> : 'Kod Gönder'}
+                <AuthButtonLabel busy={loading} busyText="Kod gönderiliyor...">Kod Gönder</AuthButtonLabel>
               </button>
 
               <div className="auth-links">
@@ -236,7 +248,10 @@ export default function ForgotPassword() {
           font-size: 16px;
           font-weight: 500;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: background-color 0.2s, opacity 0.2s, box-shadow 0.2s;
+          box-sizing: border-box;
+          width: 100%;
+          transform: none;
           min-height: 50px;
           display: flex;
           align-items: center;
@@ -245,7 +260,6 @@ export default function ForgotPassword() {
 
         .btn-primary:hover:not(:disabled) {
           background: #0056b3;
-          transform: translateY(-1px);
         }
 
         .btn-primary:disabled {

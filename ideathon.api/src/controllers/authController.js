@@ -108,7 +108,7 @@ class AuthController {
       }
 
       // JWT token oluştur — user için de ideathonId dahil
-      const token = generateToken(user._id, ideathonId, user.role);
+      const token = generateToken(user._id, ideathonId, user.role, user.sessionVersion);
 
       // Şifresiz kullanıcı bilgilerini döndür
       const userResponse = {
@@ -222,7 +222,8 @@ class AuthController {
       const token = generateToken(
         user._id,
         ['juri', 'mentor'].includes(role) ? ideathonId : null,
-        role || 'user'
+        role || 'user',
+        user.sessionVersion
       );
 
       // Şifresiz response
@@ -259,131 +260,9 @@ class AuthController {
     }
   }
 
-  // Public user registration (auth gerektirmez)
-  // Multi-Tenant: ?event=slug veya body.ideathonId ile ideathon bağlantısı kurulur
+  // Public accounts are created only after email verification.
   async publicRegister(req, res) {
-    try {
-      const { name, password, phone } = req.body;
-      const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
-      const entrepreneur = req.body.entrepreneur === true;
-
-      // Validation
-      if (!name || !email || !password) {
-        return res.status(400).json({
-          success: false,
-          message: 'İsim, email ve şifre zorunludur'
-        });
-      }
-
-      // Email format kontrolü
-      const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
-      if (!emailRegex.test(email)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Geçerli bir email adresi giriniz'
-        });
-      }
-
-      // Şifre uzunluğu kontrolü
-      if (password.length < 6) {
-        return res.status(400).json({
-          success: false,
-          message: 'Şifre en az 6 karakter olmalıdır'
-        });
-      }
-
-      if (entrepreneur && (typeof phone !== 'string' || !phone.trim())) {
-        return res.status(400).json({ success: false, message: 'Telefon numarası zorunludur.', errors: { phone: 'Telefon numarası zorunludur.' } });
-      }
-      let phoneKey;
-      if (phone !== undefined && phone !== '') {
-        phoneKey = typeof phone === 'string' ? normalizePhone(phone) : null;
-        if (!phoneKey) return res.status(400).json({ success: false, message: 'Geçerli bir telefon numarası giriniz.', errors: { phone: 'Geçerli bir telefon numarası giriniz.' } });
-      }
-      if (await User.exists({ email })) return res.status(409).json({ success: false, message: 'Daha önce bu e-posta adresi kullanılmıştır.' });
-      if (phoneKey && await User.phoneInUse(phoneKey)) return res.status(409).json({ success: false, message: 'Daha önce bu telefon numarası kullanılmıştır.' });
-
-      // Multi-Tenant: ideathonId çözümle
-      // Kaynak 1: attachIdeathonFromQuerySlug middleware → req.ideathonId
-      // Kaynak 2: body.ideathonId (fallback)
-      let ideathonId = req.ideathonId || req.body.ideathonId || null;
-
-      // ideathonId varsa → ideathon'un var olduğunu ve registrationOpen olduğunu kontrol et
-      if (ideathonId) {
-        const Ideathon = require('../models/Ideathon');
-        const ideathon = await Ideathon.findById(ideathonId).lean();
-        if (!ideathon) {
-          return res.status(404).json({
-            success: false,
-            message: 'Belirtilen ideathon bulunamadı'
-          });
-        }
-        if (!ideathon.registrationOpen) {
-          return res.status(403).json({
-            success: false,
-            message: 'Bu ideathon için kayıt kapalıdır'
-          });
-        }
-      }
-
-      // Kullanıcı oluştur (sadece user rolü) — ideathonId ile
-      const user = await User.create({
-        name,
-        email,
-        password,
-        phone,
-        role: 'user',
-        ideathonId: ideathonId || undefined,
-        createdBy: null
-      });
-
-      // Multi-Tenant: UserIdeathonRole kaydı oluştur
-      if (ideathonId) {
-        await UserIdeathonRole.create({
-          userId: user._id,
-          ideathonId,
-          role: 'user',
-          isActive: true,
-          assignedBy: user._id // self-registration
-        });
-      }
-
-      // Token oluştur — ideathonId dahil
-      const token = generateToken(user._id, ideathonId, 'user');
-
-      // Şifresiz response
-      const userResponse = {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        isActive: user.isActive,
-        ideathonId: user.ideathonId || null,
-        createdAt: user.createdAt
-      };
-
-      res.status(201).json({
-        success: true,
-        message: 'Kullanıcı başarıyla oluşturuldu',
-        data: {
-          user: userResponse,
-          token
-        }
-      });
-    } catch (error) {
-      if (error.code === 11000) {
-        return res.status(409).json({
-          success: false,
-          message: identityConflict(error)
-        });
-      }
-
-      res.status(500).json({
-        success: false,
-        message: error.message || 'Kullanıcı oluşturulurken hata oluştu'
-      });
-    }
+    return require('./registrationController').start(req, res);
   }
 
   // Kullanıcı profili güncelle (kendi profili)
@@ -615,7 +494,7 @@ class AuthController {
       }
 
       // Yeni token oluştur
-      const token = generateToken(req.user._id, ideathonId, role);
+      const token = generateToken(req.user._id, ideathonId, role, req.user.sessionVersion);
 
       res.status(200).json({
         success: true,
@@ -745,7 +624,7 @@ class AuthController {
       });
 
       // Token oluştur
-      const token = generateToken(superAdmin._id, null, 'superadmin');
+      const token = generateToken(superAdmin._id, null, 'superadmin', superAdmin.sessionVersion);
 
       const userResponse = {
         _id: superAdmin._id,
@@ -780,128 +659,76 @@ class AuthController {
     }
   }
 
-  // Şifre sıfırlama isteği
+  // Reset codes are purpose-bound HMACs. Mail delivery never changes a password.
   async forgotPassword(req, res) {
+    const mail = require('../services/authMail');
+    const generic = { success: true, message: 'Bu adresle aktif bir hesap varsa şifre sıfırlama kodu gönderildi.' };
     try {
-      const { email } = req.body;
-
-      if (typeof email !== 'string' || !email) {
-        return res.status(400).json({
-          success: false,
-          message: 'Email alanı zorunludur'
-        });
+      const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+      if (!email || email.length > 254 || !/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
+        return res.status(400).json({ success: false, message: 'Geçerli bir e-posta adresi giriniz.' });
       }
-
-      // Email format kontrolü
-      const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
-      if (!emailRegex.test(email)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Geçerli bir email adresi giriniz'
-        });
-      }
-
-      // Kullanıcıyı bul
-      const user = await User.findOne({ email: email.toLowerCase() });
-
-      if (!user) {
-        // Güvenlik için "email gönderildi" mesajı ver
-        return res.status(200).json({
-          success: true,
-          message: 'Şifre sıfırlama bağlantısı email adresinize gönderildi'
-        });
-      }
-
-      if (!user.isActive) {
-        return res.status(400).json({
-          success: false,
-          message: 'Hesabınız pasif durumda. Yönetici ile iletişime geçin.'
-        });
-      }
-
-      // Reset kodu oluştur
-      const resetCode = user.createPasswordResetCode();
-      await user.save();
-
-      // Email gönder
+      const user = await User.findOne({ email, isActive: true });
+      if (!user) return res.json(generic);
+      const now = new Date();
+      const resetCode = crypto.randomInt(100000, 1000000).toString();
+      const digest = mail.codeDigest('password_reset', email, resetCode);
+      const saved = await User.updateOne({ _id: user._id, email, isActive: true, $or: [
+        { passwordResetSentAt: { $exists: false } }, { passwordResetSentAt: { $lte: new Date(now.getTime() - 60000) } }
+      ] }, { $set: { passwordResetCode: digest, passwordResetExpires: new Date(now.getTime() + 15 * 60000),
+        passwordResetAttempts: 0, passwordResetSentAt: now } });
+      if (saved.modifiedCount !== 1) return res.json(generic);
       try {
         await emailService.sendPasswordResetEmail(user.email, resetCode, user.name);
-
-        res.status(200).json({
-          success: true,
-          message: 'Şifre sıfırlama bağlantısı email adresinize gönderildi'
-        });
-      } catch (emailError) {
-        // Email gönderilemezse token'ı temizle
-        user.passwordResetCode = undefined;
-        user.passwordResetExpires = undefined;
-        await user.save();
-
-        console.error('Email gönderme hatası:', emailError);
-        return res.status(500).json({
-          success: false,
-          message: 'Email gönderilemedi. Lütfen daha sonra tekrar deneyin.'
-        });
+      } catch (error) {
+        // A failed older send must never clear a newer code.
+        await User.updateOne({ _id: user._id, passwordResetCode: digest }, { $unset: {
+          passwordResetCode: 1, passwordResetExpires: 1, passwordResetAttempts: 1, passwordResetSentAt: 1
+        } });
+        console.error('Password reset email failed:', error.code || error.name || 'Error');
+        return res.status(503).json({ success: false, message: 'E-posta gönderilemedi. Lütfen daha sonra tekrar deneyin.' });
       }
+      return res.json(generic);
     } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: error.message || 'Şifre sıfırlama isteği işlenirken hata oluştu'
-      });
+      console.error('Password reset request failed:', error.code || error.name || 'Error');
+      return res.status(503).json({ success: false, message: 'Şifre sıfırlama isteği tamamlanamadı. Lütfen tekrar deneyin.' });
     }
   }
 
-  // Şifre sıfırlama
   async resetPassword(req, res) {
+    const mail = require('../services/authMail');
+    const invalid = () => res.status(400).json({ success: false, message: 'Kod hatalı, süresi dolmuş veya deneme sınırı aşılmış. Yeni kod isteyin.' });
     try {
-      const { email, code, newPassword } = req.body;
-
-      if (typeof email !== 'string' || typeof code !== 'string' || typeof newPassword !== 'string' || !email || !/^\d{6}$/.test(code) || !newPassword) {
-        return res.status(400).json({
-          success: false,
-          message: 'Email, kod ve yeni şifre zorunludur'
-        });
+      const { code, newPassword } = req.body;
+      const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+      if (!email || email.length > 254 || typeof code !== 'string' || !/^\d{6}$/.test(code) ||
+          typeof newPassword !== 'string' || newPassword.length < 6 || Buffer.byteLength(newPassword) > 72) {
+        return res.status(400).json({ success: false, message: 'E-posta, altı haneli kod ve 6–72 bayt uzunluğunda yeni şifre giriniz.' });
       }
-
-      if (newPassword.length < 6) {
-        return res.status(400).json({
-          success: false,
-          message: 'Yeni şifre en az 6 karakter olmalıdır'
-        });
+      const user = await User.findOne({ email, isActive: true, passwordResetExpires: { $gt: new Date() } })
+        .select('+passwordResetCode +passwordResetExpires +passwordResetAttempts');
+      if (!user || !user.passwordResetCode || (user.passwordResetAttempts || 0) >= 5) return invalid();
+      const digest = mail.codeDigest('password_reset', email, code);
+      const filter = { _id: user._id, email, isActive: true, passwordResetCode: user.passwordResetCode,
+        passwordResetExpires: { $gt: new Date() }, $or: [
+          { passwordResetAttempts: { $exists: false } }, { passwordResetAttempts: { $lt: 5 } }
+        ] };
+      // Existing unexpired legacy codes remain usable once during rollout.
+      const expected = /^\d{6}$/.test(user.passwordResetCode) ? code : digest;
+      if (!mail.matchesCode(user.passwordResetCode, expected)) {
+        await User.updateOne(filter, { $inc: { passwordResetAttempts: 1 } });
+        return invalid();
       }
-
-      // Email ve kod ile kullanıcıyı bul
-      const user = await User.findOne({
-        email: email.toLowerCase(),
-        passwordResetCode: code,
-        passwordResetExpires: { $gt: Date.now() }
-      }).select('+passwordResetCode +passwordResetExpires');
-
-      if (!user) {
-        return res.status(400).json({
-          success: false,
-          message: 'Geçersiz kod, süresi dolmuş veya yanlış email'
-        });
-      }
-
-      // Consume the code atomically so simultaneous requests cannot reuse it.
       const password = await require('bcryptjs').hash(newPassword, 12);
-      const consumed = await User.updateOne({
-        _id: user._id, passwordResetCode: code, passwordResetExpires: { $gt: Date.now() }
-      }, { $set: { password }, $unset: { passwordResetCode: 1, passwordResetExpires: 1 } }, { runValidators: true });
-      if (consumed.modifiedCount !== 1) {
-        return res.status(400).json({ success: false, message: 'Geçersiz kod, süresi dolmuş veya yanlış email' });
-      }
-
-      res.status(200).json({
-        success: true,
-        message: 'Şifreniz başarıyla güncellendi'
-      });
+      filter.passwordResetExpires = { $gt: new Date() };
+      const consumed = await User.updateOne(filter, { $set: { password }, $inc: { sessionVersion: 1 },
+        $unset: { passwordResetCode: 1, passwordResetExpires: 1, passwordResetAttempts: 1, passwordResetSentAt: 1 } }, { runValidators: true });
+      if (consumed.modifiedCount !== 1) return invalid();
+      require('../services/socketService').io?.in(`user:${user._id}`).disconnectSockets(true);
+      return res.json({ success: true, message: 'Şifreniz güncellendi. Yeni şifrenizle giriş yapabilirsiniz.' });
     } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: error.message || 'Şifre güncellenirken hata oluştu'
-      });
+      console.error('Password reset failed:', error.code || error.name || 'Error');
+      return res.status(503).json({ success: false, message: 'Şifre sıfırlama tamamlanamadı. Lütfen tekrar deneyin.' });
     }
   }
 
@@ -1005,7 +832,7 @@ class AuthController {
       }
 
       // JWT token oluştur — ideathonId dahil
-      const token = generateToken(user._id, ideathonRole.ideathonId._id, 'mentor');
+      const token = generateToken(user._id, ideathonRole.ideathonId._id, 'mentor', user.sessionVersion);
 
       // Şifresiz kullanıcı bilgilerini döndür
       const userResponse = {
@@ -1083,7 +910,7 @@ class AuthController {
       }
 
       // Yeni token oluştur (admin için ideathonId opsiyonel)
-      const token = generateToken(req.user._id, selectedIdeathonId, req.user.role);
+      const token = generateToken(req.user._id, selectedIdeathonId, req.user.role, req.user.sessionVersion);
 
       res.status(200).json({
         success: true,

@@ -10,6 +10,8 @@ import Link from 'next/link';
 import Head from 'next/head';
 import Layout from '@/components/Layout';
 import ErrorMessage from '@/components/ErrorMessage';
+import RegistrationVerification from '@/components/RegistrationVerification';
+import AuthButtonLabel from '@/components/AuthButtonLabel';
 import { useAuth } from '@/context/AuthContext';
 import { useIdeathonConfig, useIdeathon } from '@/context/IdeathonContext';
 import { validateEmail, validatePassword, validateRequired, validatePhone } from '@/utils/validation';
@@ -19,7 +21,7 @@ export default function RegisterPage({ entrepreneur = false }) {
   const router = useRouter();
   const { register, isAuthenticated, loading: authLoading } = useAuth();
   const config = useIdeathonConfig();
-  const { hasSlug } = useIdeathon();
+  const { hasSlug, slug } = useIdeathon();
   const nameRef = useRef(null);
   const [landingAnim, setLandingAnim] = useState(false);
   
@@ -34,8 +36,33 @@ export default function RegisterPage({ entrepreneur = false }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [pending, setPending] = useState(null);
+  const submitInFlight = useRef(false);
+  const pendingKey = `registration-verification:${entrepreneur ? 'entrepreneur' : slug || 'default'}`;
   const redirectTo = safeRedirect(router.query.redirect, entrepreneur ? '/girisimciler/basvuru' : '/basvuru');
   const loginHref = authFlowLinks({ entrepreneur, redirect: router.query.redirect }).login;
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    setPending(null);
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(pendingKey) || 'null');
+      if (saved?.registrationToken && typeof saved.email === 'string' && Date.parse(saved.expiresAt) > Date.now()) {
+        setPending(saved);
+      } else sessionStorage.removeItem(pendingKey);
+    } catch { /* Storage may be unavailable in private browsing. */ }
+  }, [pendingKey, router.isReady]);
+
+  function rememberPending(value) {
+    // Never persist a password or verification code in browser storage.
+    const safe = value ? { registrationToken: value.registrationToken, email: value.email,
+      expiresAt: value.expiresAt, codeExpiresAt: value.codeExpiresAt, resendAvailableAt: value.resendAvailableAt } : null;
+    setPending(safe);
+    try {
+      if (safe) sessionStorage.setItem(pendingKey, JSON.stringify(safe));
+      else sessionStorage.removeItem(pendingKey);
+    } catch { /* The current page can still complete verification. */ }
+  }
 
   // Zaten giriş yapmışsa yönlendir
   useEffect(() => {
@@ -188,12 +215,14 @@ export default function RegisterPage({ entrepreneur = false }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitInFlight.current) return;
     setApiError('');
 
     if (!validateForm()) {
       return;
     }
 
+    submitInFlight.current = true;
     setIsSubmitting(true);
 
     try {
@@ -201,10 +230,14 @@ export default function RegisterPage({ entrepreneur = false }) {
 
       if (!result?.success) {
         setApiError(result?.error || 'Kayıt yapılırken bir hata oluştu');
+      } else if (result.data?.verificationRequired) {
+        rememberPending(result.data);
+        setFormData(previous => ({ ...previous, password: '', confirmPassword: '' }));
       }
     } catch (error) {
       setApiError('Bir hata oluştu. Lütfen tekrar deneyiniz.');
     } finally {
+      submitInFlight.current = false;
       setIsSubmitting(false);
     }
   };
@@ -271,10 +304,10 @@ export default function RegisterPage({ entrepreneur = false }) {
                           </span>
                         </div>
                         <h2 className="alt-font text-dark-gray fw-700 mb-10px lh-44">
-                          {entrepreneur ? 'Girişimci Hesabı Oluştur' : 'Hesap Oluştur'}
+                          {pending ? 'E-postanızı Doğrulayın' : entrepreneur ? 'Girişimci Hesabı Oluştur' : 'Hesap Oluştur'}
                         </h2>
                         <p className="text-medium-gray lh-28 fs-15 mb-0">
-                          {entrepreneur ? 'Girişimci başvurunuza başlamak için hesabınızı oluşturun.' : `${config.name} için kayıt olun`}
+                          {pending ? 'Hesabınızı oluşturmak için son bir adım kaldı.' : entrepreneur ? 'Girişimci başvurunuza başlamak için hesabınızı oluşturun.' : `${config.name} için kayıt olun`}
                         </p>
                       </div>
 
@@ -282,6 +315,11 @@ export default function RegisterPage({ entrepreneur = false }) {
                       {apiError && <ErrorMessage message={apiError} />}
 
                       {/* Form */}
+                      {pending ? <RegistrationVerification pending={pending} onPendingChange={rememberPending}
+                        onComplete={() => rememberPending(null)} onEdit={() => {
+                          setFormData(previous => ({ ...previous, email: pending.email, password: '', confirmPassword: '' }));
+                          rememberPending(null); setApiError('');
+                        }} /> : (
                       <form onSubmit={handleSubmit}>
                         {/* Ad Soyad */}
                         <div className="mb-25px">
@@ -404,11 +442,12 @@ export default function RegisterPage({ entrepreneur = false }) {
                           type="submit"
                           className="submit-btn-primary w-100"
                           disabled={isSubmitting}
+                          aria-busy={isSubmitting}
                         >
-                          <span>{isSubmitting ? 'Kayıt yapılıyor...' : 'Kayıt Ol'}</span>
-                          <i className={`bi ${isSubmitting ? 'bi-arrow-repeat spinning' : 'bi-arrow-right'}`}></i>
+                          <AuthButtonLabel busy={isSubmitting} busyText="Doğrulama kodu gönderiliyor..." icon="bi-arrow-right">Kayıt Ol</AuthButtonLabel>
                         </button>
                       </form>
+                      )}
 
                       {/* Login Link */}
                       <div className="text-center mt-30px">

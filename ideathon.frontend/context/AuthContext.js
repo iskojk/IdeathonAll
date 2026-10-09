@@ -123,6 +123,21 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.register(name, email, password, phone, options);
 
       if (response.success) {
+        if (response.data?.verificationRequired) return { success: true, data: response.data };
+        throw new Error('E-posta doğrulama adımı başlatılamadı.');
+      }
+      return { success: false, error: response.message || 'Kayıt başlatılamadı.' };
+    } catch (err) {
+      setError(err.message);
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  const completeRegistration = useCallback(async (registrationToken, code) => {
+    try {
+      setError(null);
+      const response = await authAPI.verifyRegistration(registrationToken, code);
+      if (response.success && response.data?.token && response.data?.user) {
         setToken(response.data.token);
         setUser(response.data.user);
         setUserState(response.data.user);
@@ -130,9 +145,9 @@ export const AuthProvider = ({ children }) => {
         toast.success(`Hoş geldiniz, ${response.data.user.name}! 🎉`);
         return { success: true, data: response.data };
       }
+      return { success: false, error: response.message || 'Doğrulama tamamlanamadı.' };
     } catch (err) {
       setError(err.message);
-      toast.error(err.message || 'Kayıt işlemi başarısız oldu');
       return { success: false, error: err.message };
     }
   }, []);
@@ -214,12 +229,13 @@ export const AuthProvider = ({ children }) => {
     loading,
     error,
     register,
+    completeRegistration,
     login,
     logout,
     updateProfile,
     refreshUser,
     isAuthenticated: !!user,
-  }), [user, loading, error, register, login, logout, updateProfile, refreshUser]);
+  }), [user, loading, error, register, completeRegistration, login, logout, updateProfile, refreshUser]);
 
   return (
     <AuthContext.Provider value={value}>

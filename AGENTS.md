@@ -1,5 +1,34 @@
 # Ideathon — agent devir notu
 
+## 9 Ekim 2026 — giriş/kayıt/kurtarma butonlarında sabit ölçüler
+
+Şifremi Unuttum ve Şifre Sıfırla butonları `Loading size="small"` kullanıyordu; Loading bu parametreyi işlemediği için 40px padding'li genel yükleme görünümü butonu büyütüyordu. Bu iki buton ve giriş/kayıt/doğrulama ana butonları ortak AuthButtonLabel kullanır: normal ve işlem metinleri aynı grid hücresinde alan ayırır; görünmez metin ekran okuyucudan gizlenir; 18px spinner boşluksuzdur. Böylece dar ekranda metin satıra sarsa da normal/yükleniyor geçişinde boyut değişmez. Kayıt doğrulamasındaki yeni kod geri sayımı da en uzun metin için sabit alan ayırır. Auth ekranlarına özel hover/active hareketleri kaldırıldı; yardımcı doğrulama butonlarında border/padding sabitlendi. Başka ekranların genel Loading bileşeni değiştirilmedi.
+
+Altı JSX kaynağı ESLint'ten 0 hata ile geçti (Login/Register'da mevcut iki effect bağımlılık uyarısı sürer); auth CSS PostCSS ile ayrıştırıldı, diff kontrolü geçti. Test paketleri, gerçek e-posta/parola işlemi veya tarayıcı gönderimi yapılmadı; doğrulama kaynak/stil kontrolüyle sınırlı. API değişmedi, restart/push yapılmadı.
+
+## 9 Ekim 2026 — sıfırlama ekranında e-postanın dolu gelmesi
+
+Ortak frontend Şifremi Unuttum akışı, başarıyla kod istenen e-postayı normalize ederek hem sonraki ekranın bağlantısına hem 15 dakika süreli sessionStorage kaydına taşır. Kod/yeni şifre ekranı router hazır olduğunda önce bağlantıdaki adresi, yoksa aynı sekmedeki bekleyen adresi kullanır. Kod almadınız mı ile geri dönülünce de alan doldurulur; kullanıcının elle yaptığı düzenleme sonraki router güncellemesiyle ezilmez. Başarılı sıfırlama ilgili geçici adresi temizler. Kod veya parola tarayıcı deposuna yazılmaz. Girişimci kaynak/dönüş bağlantıları korunur; API ve paneller değiştirilmedi.
+
+Üç değişen frontend kaynağı ESLint kontrolünden hata/uyarı olmadan geçti; diff kontrolü geçti. Önceki durdurma talebi doğrultusunda test paketi, gerçek e-posta veya gerçek parola sıfırlama yapılmadı. Bu arayüz değişikliği Next geliştirme sunucusu tarafından yüklenir; API restart gerektirmez. Push yapılmadı.
+
+## 9 Ekim 2026 — girişimci e-postalarının başlık ve içerikleri
+
+Kullanıcı Gmail'de aldığı kayıt doğrulama ve şifre sıfırlama e-postalarının ekran görüntülerini paylaştı; iki akışta da teslimat kullanıcı tarafından gözlendi. Eski EKA başlığı yerine **AFZ-Girişimci Başvurum** kullanıldı. Özel `.env.auth-mail` dosyasında yalnızca AUTH_MAIL_FROM_NAME güncellendi; yeni ad kaynak varsayılanı ve `.env.example` ile eşlendi. authMail.js içindeki HTML/düz metin mesajları kayıt/başvuruya devam ve şifre sıfırlama için ayrı açıklamalar, kodun kullanılacağı ekran ve ekip imzasıyla yenilendi. Konular Kayıt doğrulama kodunuz / Şifre sıfırlama kodunuz + marka adıdır. Kod geçerlilik süreleri ve kimlik doğrulama davranışı korunur. Kullanıcıya daha önce ulaşan mesajlar değişmez; yeni içerik sonraki gönderimlerde kullanılır.
+
+Bu metin değişikliği için test paketi/gerçek e-posta gönderimi yapılmadı. Kaynak sözdizimi ve diff kontrolü uygulandı. Yerel API yeni gönderici adı ve şablonla yeniden başlatıldı; 5010 loopback portunda çalıştığı ve özel dosyanın 0600 izni korunduğu kontrol edildi. Push/canlı yayın yapılmadı.
+
+## 9 Ekim 2026 — Microsoft 365 ile kayıt ve şifre sıfırlama
+
+Kullanıcı gerçek SMTP bilgilerini vererek kayıt doğrulaması ve şifremi unuttum entegrasyonunu yeniden istedi; önceki girişimci OTP kaldırma talebi bu kapsamda yenilendi. Özel `ideathon.api/.env.auth-mail` oluşturuldu (0600, Git dışı); içeriğini/logunu/şifresini çıktılara veya Git'e eklemeyin. `AUTH_SMTP_*`, `AUTH_MAIL_FROM`, `AUTH_MAIL_FROM_NAME`, bağımsız `AUTH_VERIFICATION_SECRET` kullanılır. Microsoft 365: 587/STARTTLS/sertifika doğrulama. Ortak `SMTP_*` Mailpit ayarları korundu; sadece kayıt ve sıfırlama bu gerçek göndericiyi kullanır. Auth transport başlangıçta e-posta veya verify çağrısı yapmaz. `.dockerignore` özel ortam dosyalarını dışlar.
+
+Ortak `/api/auth/register` (normal + girişimci) HTTP 202 ile doğrulama başlatır; `/register/verify` koddan sonra User/JWT oluşturur, `/register/resend` yeni kod yollar. PendingRegistration kullanıcıdan ayrı, her girişimde ayrı kimlikli; parola bcrypt, kod amaca bağlı HMAC. Kod 10 dk, girişim 30 dk/TTL, resend 60 sn, 5 yanlış deneme, IP/hesap sınırları. Kullanıcı/telefon tekilliği ve Ideathon kayıt açıklığı doğrulamada tekrar kontrol edilir; standalone Mongo uyumlu ve kesinti sonrasında tamamlanabilir. Eski kayıt girişimi başka girişimin şifresini değiştiremez. Frontend kod girme/tekrar gönderme/bilgileri değiştirme ekranı ve şifresiz sessionStorage devamı içerir.
+
+Sıfırlama HMAC kod/15 dk/5 deneme/60 sn gönderim aralığı, atomik tek tüketim, gönderim hatasında yalnızca ilgili kodu temizleme kullanır. Başarılı sıfırlama sessionVersion artırır; HTTP JWT ve Socket.IO eski oturumları geçersizleşir. Eski hesap/JWT'ler varsayılan sürüm 0 ile çalışır; mevcut hesaplara geriye dönük e-posta doğrulaması atanmamıştır. Profil e-postası değişirse eski doğrulama ve sıfırlama metaverisi temizlenir; profil adres değişimine ayrı kod ekranı eklenmedi. Mevcut hesap/başvurulara toplu yazma veya veri dönüşümü yapılmadı.
+
+Kayıt kullanan üç eski doğrulama betiği yeni akışa uyarlandı; normal API'de gerçek mail göndermemeleri için yalnızca izole QA API/DB'de çalışırlar. Auth mail servisi test/QA veritabanında harici SMTP'yi ayrıca reddeder. Şifre sıfırlama birim fixture'ı HMAC/CAS davranışına uyarlandı. **Testler çalıştırılmadı**: kullanıcının önceki durdurma talebi sürüyor. 15 API/script dosyası node --check, dört frontend dosyası ESLint (0 hata, mevcut 5 uyarı), diff kontrolü geçti. Yeni SMTP kimlik doğrulaması, gerçek e-posta teslimatı ve tarayıcı/uçtan uca akış henüz doğrulanmadı. API kimliği kontrol edilerek yeni kodla yeniden başlatıldı; test veya deneme e-postası gönderilmedi. Push/canlı yayın yapılmadı. Sonraki doğrulamada önce Microsoft 365 SMTP AUTH erişimi ve izole Mailpit akışı kontrol edilmeli; kullanıcının testleri başlatma talebi olmadan test paketlerini çalıştırmayın.
+
+
 ## 9 Ekim 2026 — canlı öncesi yerel kontroller ve güvenlik düzeltmeleri
 
 Dört arayüz Next 15.5.27'ye, üç panel React/React DOM 19.2.8 ve sharp 0.35.5'e, API nodemailer 10.0.16'ya güncellendi. Uyumlu bağımlılık düzeltmeleri, PostCSS 8.5.29 override'ı ve ExcelJS için CommonJS uyumlu uuid 11 override'ı uygulandı. Runtime audit'lerinde high/critical kalmadı; panellerde 11 moderate bulgu ve geliştirme araçlarında çözülmemiş uyarılar vardır. ESLint 9/Next flat config tüm JS/JSX kaynaklarını tarar; engelleyici JSX tırnak/key hataları düzeltildi. Frontend'in build hatalarını yok sayma ayarları kaldırıldı. NEXT_BUILD_CPUS ve yalnızca geliştirmede NEXT_DEV_CACHE_OFF=1 kaynak sınırları için kullanılabilir; son yerel Next süreçleri disk önbelleği kapalı başlatıldı.

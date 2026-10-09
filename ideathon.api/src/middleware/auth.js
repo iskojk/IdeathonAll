@@ -11,8 +11,8 @@ const UserIdeathonRole = require('../models/UserIdeathonRole');
 // JWT token oluştur (genişletilmiş)
 // - Jüri/Mentor: generateToken(userId, ideathonId, 'juri'|'mentor')
 // - Admin/Superadmin/User: generateToken(userId, null, 'admin'|'superadmin'|'user')
-const generateToken = (userId, ideathonId = null, role = null) => {
-  const payload = { userId };
+const generateToken = (userId, ideathonId = null, role = null, sessionVersion = 0) => {
+  const payload = { userId, sessionVersion };
 
   if (ideathonId) {
     payload.ideathonId = ideathonId;
@@ -74,6 +74,10 @@ const authenticate = async (req, res, next) => {
         success: false,
         message: 'Hesabınız pasif durumda'
       });
+    }
+
+    if ((decoded.sessionVersion || 0) !== (user.sessionVersion || 0)) {
+      return res.status(401).json({ success: false, message: 'Oturumunuz sona erdi. Lütfen tekrar giriş yapın.' });
     }
 
     // JWT payload bilgilerini request'e ekle

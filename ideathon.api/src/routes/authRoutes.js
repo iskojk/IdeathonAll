@@ -1,5 +1,6 @@
 const express = require('express');
 const authController = require('../controllers/authController');
+const registrationController = require('../controllers/registrationController');
 const { passwordResetLimits } = require('../services/passwordResetLimits');
 const {
   authenticate,
@@ -11,6 +12,10 @@ const {
 } = require('../middleware/auth');
 
 const router = express.Router();
+const [registrationSendIP, registrationSendAccount] = passwordResetLimits({ ipLimit: 10, accountLimit: 3,
+  message: 'Çok fazla kayıt kodu isteği. Lütfen 15 dakika sonra tekrar deneyin.' });
+const [registrationVerifyIP, registrationVerifyAccount] = passwordResetLimits({ ipLimit: 30, accountLimit: 10,
+  message: 'Çok fazla doğrulama denemesi. Lütfen 15 dakika sonra tekrar deneyin.' });
 
 // === PUBLIC ROUTES (No Auth Required) ===
 
@@ -29,9 +34,15 @@ router.post('/mentor-login',
 // Public user registration (auth gerektirmez)
 // Multi-Tenant: ?event=slug ile ideathon bağlantısı (opsiyonel)
 router.post('/register',
+  registrationSendIP,
+  registrationSendAccount,
   attachIdeathonFromQuerySlugOptional,
   authController.publicRegister
 );
+router.post('/register/verify', registrationVerifyIP, registrationController.loadAttempt,
+  registrationVerifyAccount, registrationController.verify);
+router.post('/register/resend', registrationSendIP, registrationController.loadAttempt,
+  registrationSendAccount, registrationController.resend);
 
 // İlk superadmin oluşturma (sadece sistemde superadmin yoksa çalışır)
 router.post('/create-initial-admin',

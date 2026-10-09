@@ -165,6 +165,14 @@ export const authAPI = {
     });
   },
 
+  verifyRegistration: (registrationToken, code) => request('/auth/register/verify', {
+    method: 'POST', body: JSON.stringify({ registrationToken, code }),
+  }),
+
+  resendRegistration: (registrationToken) => request('/auth/register/resend', {
+    method: 'POST', body: JSON.stringify({ registrationToken }),
+  }),
+
   // Giriş yap
   login: async (email, password) => {
     return request('/auth/login', {

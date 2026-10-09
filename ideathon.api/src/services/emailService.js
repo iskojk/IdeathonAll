@@ -398,12 +398,7 @@ class EmailService {
   // ==================== LEGACY EMAILS (Eski sistem) ====================
 
   async sendPasswordResetEmail(email, resetCode, userName) {
-    const html = this.getPasswordResetTemplate(userName, resetCode);
-    return await this.sendEmail(
-      email,
-      'Şifre Sıfırlama Kodu - Emlak Konut',
-      html
-    );
+    return require('./authMail').sendCode(email, resetCode, userName, 'password_reset');
   }
 
   async sendNewApplicationNotification(application) {

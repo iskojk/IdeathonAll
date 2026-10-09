@@ -1,3 +1,4 @@
+import { requireAuthSandbox, mailpitCodes } from './auth-verification.mjs';
 import { verificationTarget } from './verification-target.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -10,6 +11,9 @@ const dotenv = requireAPI('dotenv');
 const env = dotenv.parse(readFileSync(new URL('../ideathon.api/.env', import.meta.url)));
 assert.equal(env.MONGODB_URI, 'mongodb://127.0.0.1:27027/ideathon_local', 'Bu test yalnızca yerel veritabanında çalışır.');
 const target = verificationTarget(env.MONGODB_URI);
+requireAuthSandbox(target);
+const mailbox = mailpitCodes();
+const pendingEmails = [];
 const base = `${target.apiOrigin}/api`;
 const userIds = [];
 await mongoose.connect(target.mongoURI);
@@ -32,8 +36,11 @@ async function request(path, { token, method = 'GET', body, expected = 200 } = {
 
 async function createTestUser() {
   const email = `entrepreneur-qa-${randomBytes(8).toString('hex')}@example.com`;
-  const response = await request('/auth/register', { method: 'POST', expected: 201, body: { name: 'Yerel Girişimci Testi', email, password: randomBytes(24).toString('base64url') } });
-  const { data } = await response.json();
+  pendingEmails.push(email);
+  const response = await request('/auth/register', { method: 'POST', expected: 202, body: { name: 'Yerel Girişimci Testi', email, password: randomBytes(24).toString('base64url') } });
+  const begun = (await response.json()).data;
+  const code = await mailbox.read(email);
+  const { data } = await (await request('/auth/register/verify', { method: 'POST', expected: 201, body: { registrationToken: begun.registrationToken, code } })).json();
   userIds.push(data.user._id);
   assert.equal(data.user.ideathonId, null);
   return data.token;
@@ -374,6 +381,11 @@ try {
     const restored = await Settings.updateOne({ _id: 'entrepreneur', revision: lastSettingsRevision }, { $set: { active: settingsBefore.active, draft: settingsBefore.draft, publishedAt: settingsBefore.publishedAt || null, updatedBy: settingsBefore.updatedBy || null }, $inc: { revision: 1 } });
     assert.equal(restored.matchedCount, 1, 'Soru seti test sırasında başka bir oturumda değişti; üzerine yazılmadı.');
   }
+  const pendingCollection = mongoose.connection.db.collection('pendingregistrations');
+  const attempts = await pendingCollection.find({ email: { $in: pendingEmails } }).toArray();
+  userIds.push(...attempts.map(item => item.userId));
+  await pendingCollection.deleteMany({ email: { $in: pendingEmails } });
+  await mailbox.cleanup();
   await Document.deleteMany({ userId: { $in: userIds } });
   await FormDraft.deleteMany({ createdBy: { $in: userIds }, legacyKey: { $exists: false } });
   await Application.deleteMany({ userId: { $in: userIds } });

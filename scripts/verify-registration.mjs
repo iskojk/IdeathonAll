@@ -1,3 +1,4 @@
+import { requireAuthSandbox, mailpitCodes } from './auth-verification.mjs';
 import { verificationTarget } from './verification-target.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -7,6 +8,8 @@ const r = createRequire(new URL('../ideathon.api/package.json', import.meta.url)
 const env = r('dotenv').parse(readFileSync(new URL('../ideathon.api/.env', import.meta.url)));
 assert.equal(env.MONGODB_URI, 'mongodb://127.0.0.1:27027/ideathon_local');
 const target = verificationTarget(env.MONGODB_URI);
+requireAuthSandbox(target);
+const mailbox = mailpitCodes();
 const { MongoClient, BSON } = r('mongoose').mongo;
 const client = new MongoClient(target.mongoURI);
 const prefix = `registration-check-${randomBytes(8).toString('hex')}`;
@@ -15,7 +18,14 @@ const phone = () => '05' + Array.from(randomBytes(9), n => n % 10).join('');
 const hash = value => createHash('sha256').update(BSON.serialize(value)).digest('hex');
 async function register(name, tel, email = `${prefix}-${name}@example.com`) {
   const response = await fetch(`${target.apiOrigin}/api/auth/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Geçici Kayıt Kontrolü', email, password, phone: tel, entrepreneur: true }), signal: AbortSignal.timeout(20000) });
-  return { status: response.status, body: await response.json() };
+  const body = await response.json();
+  if (response.status !== 202) return { status: response.status, body };
+  assert.equal(body.data.verificationRequired, true);
+  assert.equal(body.data.token, undefined);
+  const code = await mailbox.read(email.trim().toLowerCase());
+  const verified = await fetch(`${target.apiOrigin}/api/auth/register/verify`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ registrationToken: body.data.registrationToken, code }), signal: AbortSignal.timeout(20000) });
+  return { status: verified.status, body: await verified.json() };
 }
 await client.connect();
 const users = client.db().collection('users');
@@ -43,6 +53,8 @@ try {
   assert.equal(await users.countDocuments({ email: { $regex: `^${prefix}-` } }), 2);
   console.log('OK: Zorunlu/geçerli telefon, eski numara, farklı telefon yazılışları, e-posta tekilliği ve eşzamanlı çift kayıt engeli doğrulandı.');
 } finally {
+  await client.db().collection('pendingregistrations').deleteMany({ email: { $regex: `^${prefix}-` } });
+  await mailbox.cleanup();
   await users.deleteMany({ email: { $regex: `^${prefix}-` } });
   for (const original of originals) assert.equal(hash(await users.findOne({ _id: original._id })), hash(original), 'Mevcut kullanıcı bilgileri değişmemeli.');
   assert.equal(await users.countDocuments({}), originals.length);

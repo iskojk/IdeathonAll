@@ -10,6 +10,7 @@ import Head from 'next/head';
 import Layout from '@/components/Layout';
 import ErrorMessage from '@/components/ErrorMessage';
 import { useAuth } from '@/context/AuthContext';
+import AuthButtonLabel from '@/components/AuthButtonLabel';
 import { useIdeathonConfig, useIdeathon } from '@/context/IdeathonContext';
 import { validateEmail, validateRequired } from '@/utils/validation';
 import { safeRedirect, authFlowLinks } from '@/lib/authRoutes';
@@ -271,9 +272,9 @@ export default function LoginPage({ entrepreneur = false }) {
                       type="submit" 
                       className="submit-btn-primary w-100 mb-25px" 
                       disabled={isSubmitting}
+                      aria-busy={isSubmitting}
                     >
-                      <span>{isSubmitting ? 'Giriş Yapılıyor...' : 'Giriş Yap'}</span>
-                      <i className={`bi ${isSubmitting ? 'bi-arrow-repeat spinning' : 'bi-box-arrow-in-right'}`}></i>
+                      <AuthButtonLabel busy={isSubmitting} busyText="Giriş Yapılıyor..." icon="bi-box-arrow-in-right">Giriş Yap</AuthButtonLabel>
                     </button>
 
                     {/* Register Link — sadece kayıtlar açıksa göster */}

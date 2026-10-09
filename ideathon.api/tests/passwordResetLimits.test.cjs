@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const express = require('express');
+process.env.AUTH_VERIFICATION_SECRET = require('node:crypto').randomBytes(32).toString('hex');
 const { passwordResetLimits } = require('../src/services/passwordResetLimits');
 
 test('password reset limits normalize accounts, block repeated attempts, and retain a separate IP limit', async () => {
@@ -28,9 +29,12 @@ test('reset codes use six digits and reset metadata is excluded from ordinary us
   const User = require('../src/models/User');
   assert.equal(User.schema.path('passwordResetCode').options.select, false);
   assert.equal(User.schema.path('passwordResetExpires').options.select, false);
-  const user = new User();
+  const user = new User({ email: 'code-test@example.com' });
   for (let index = 0; index < 20; index++) assert.match(user.createPasswordResetCode(), /^\d{6}$/);
   assert.ok(user.passwordResetExpires > new Date());
+  const code = user.createPasswordResetCode();
+  assert.match(user.passwordResetCode, /^[a-f0-9]{64}$/);
+  assert.notEqual(user.passwordResetCode, code);
 });
 
 test('failed reset email delivery clears the usable code and expiry', async t => {
@@ -41,12 +45,15 @@ test('failed reset email delivery clears the usable code and expiry', async t =>
   const controller = require('../src/controllers/authController');
   const user = new User({ name: 'Reset Test', email: 'reset@example.com', isActive: true });
   t.mock.method(User, 'findOne', async () => user);
-  t.mock.method(user, 'save', async () => user);
+  const writes = [];
+  t.mock.method(User, 'updateOne', async (filter, update) => { writes.push({ filter, update }); return { modifiedCount: 1 }; });
   t.mock.method(emailService, 'sendPasswordResetEmail', async () => { throw new Error('Simulated delivery failure'); });
   t.mock.method(console, 'error', () => {});
   const response = { statusCode: 200, status(code) { this.statusCode = code; return this; }, json(body) { this.body = body; return this; } };
   await controller.forgotPassword({ body: { email: user.email } }, response);
-  assert.equal(response.statusCode, 500);
-  assert.equal(user.passwordResetCode, undefined);
-  assert.equal(user.passwordResetExpires, undefined);
+  assert.equal(response.statusCode, 503);
+  assert.equal(writes.length, 2);
+  assert.equal(writes[1].filter.passwordResetCode, writes[0].update.$set.passwordResetCode);
+  assert.equal(writes[1].update.$unset.passwordResetCode, 1);
+  assert.equal(writes[1].update.$unset.passwordResetExpires, 1);
 });

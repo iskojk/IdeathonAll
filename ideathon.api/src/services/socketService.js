@@ -78,6 +78,10 @@ class SocketService {
           return next(new Error('Authentication error: Kullanıcı aktif değil'));
         }
 
+        if ((decoded.sessionVersion || 0) !== (user.sessionVersion || 0)) {
+          return next(new Error('Authentication error: Oturum sona erdi'));
+        }
+
         // Socket'e user bilgisini ekle
         socket.user = user;
         socket.userId = user._id.toString();

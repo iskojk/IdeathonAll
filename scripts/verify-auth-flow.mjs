@@ -1,3 +1,4 @@
+import { requireAuthSandbox } from './auth-verification.mjs';
 import { verificationTarget } from './verification-target.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -8,6 +9,7 @@ const requireAPI = createRequire(new URL('../ideathon.api/package.json', import.
 const env = requireAPI('dotenv').parse(readFileSync(new URL('../ideathon.api/.env', import.meta.url)));
 assert.equal(env.MONGODB_URI, 'mongodb://127.0.0.1:27027/ideathon_local', 'Bu test yalnızca yerel veritabanında çalışır.');
 const target = verificationTarget(env.MONGODB_URI);
+requireAuthSandbox(target);
 assert.equal(env.SMTP_HOST, '127.0.0.1', 'Test e-postaları yalnızca Mailpit üzerinden gönderilir.');
 assert.equal(env.SMTP_PORT, '1025');
 const mongoose = requireAPI('mongoose');
@@ -16,6 +18,8 @@ const Ideathon = requireAPI('./src/models/Ideathon');
 const UserIdeathonRole = requireAPI('./src/models/UserIdeathonRole');
 const Application = requireAPI('./src/models/EntrepreneurApplication');
 const userIds = [];
+const pendingEmails = [];
+const PendingRegistration = requireAPI('./src/models/PendingRegistration');
 const messageIds = [];
 const base = `${target.apiOrigin}/api`;
 const mailpit = 'http://127.0.0.1:8025';
@@ -60,17 +64,27 @@ try {
     const password = randomBytes(24).toString('base64url');
     const newPassword = randomBytes(24).toString('base64url');
     const registerPath = entrepreneur || !event ? '/auth/register' : `/auth/register?event=${encodeURIComponent(event.slug)}`;
-    const registration = await request(registerPath, { method: 'POST', expected: 201, body: { name: 'Yerel Auth Akış Testi', email, password, ...(entrepreneur ? { entrepreneur: true, phone: '05' + Array.from(randomBytes(9), byte => byte % 10).join('') } : {}) } });
+    pendingEmails.push(email);
+    const begun = await request(registerPath, { method: 'POST', expected: 202, body: { name: 'Yerel Auth Akış Testi', email, password, ...(entrepreneur ? { entrepreneur: true, phone: '05' + Array.from(randomBytes(9), byte => byte % 10).join('') } : {}) } });
+    assert.equal(begun.data.verificationRequired, true);
+    assert.equal(begun.data.token, undefined);
+    assert.equal(await User.exists({ email }), null, 'No User exists before email verification.');
+    const pending = await PendingRegistration.findOne({ email }).select('+passwordHash +codeDigest').lean();
+    assert.ok(pending);
+    const registrationCode = await resetCodeFromEmail(email);
+    assert.notEqual(pending.passwordHash, password);
+    assert.notEqual(pending.codeDigest, registrationCode);
+    const ticket = begun.data.registrationToken;
+    await request('/auth/register/resend', { method: 'POST', expected: 429, body: { registrationToken: ticket } });
+    await request('/auth/register/verify', { method: 'POST', expected: 400, body: { registrationToken: ticket, code: '000000' } });
+    const registration = await request('/auth/register/verify', { method: 'POST', expected: 201, body: { registrationToken: ticket, code: registrationCode } });
     const { user, token } = registration.data;
     userIds.push(user._id);
-    assert.equal(registration.data.verificationRequired, undefined, 'Kayıt bir OTP adımı beklememeli.');
+    assert.ok(user.emailVerifiedAt);
     assert.equal(user.role, 'user');
     assert.equal(user.ideathonId, entrepreneur || !event ? null : String(event._id));
-    assert.ok(token, 'Kayıt başarılı olduğunda doğrudan oturum açılmalı.');
-    const registrationMailbox = await fetch(`${mailpit}/api/v1/messages?limit=100`, { signal: AbortSignal.timeout(5000) });
-    assert.equal(registrationMailbox.status, 200);
-    assert.equal((await registrationMailbox.json()).messages.some(item => item.To?.some(to => to.Address === email)), false,
-      'Doğrudan kayıt akışında doğrulama e-postası gönderilmemeli.');
+    assert.ok(token);
+    await request('/auth/register/verify', { method: 'POST', expected: 409, body: { registrationToken: ticket, code: registrationCode } });
     const stored = await User.findById(user._id).select('+password').lean();
     assert.notEqual(stored.password, password);
     assert.match(stored.password, /^\$2[aby]\$/);
@@ -103,6 +117,7 @@ try {
     }));
     assert.deepEqual(simultaneous.sort(), [200, 400, 400], 'A reset code must be consumed exactly once under concurrent requests.');
     await request('/auth/reset-password', { method: 'POST', expected: 400, body: { email, code, newPassword } });
+    await request('/auth/me', { token, expected: 401 });
     await request('/auth/login', { method: 'POST', expected: 401, body: { email, password } });
     const relogin = await request('/auth/login', { method: 'POST', body: { email, password: newPassword } });
     assert.equal(relogin.data.user._id, user._id);
@@ -119,6 +134,9 @@ try {
     console.log(`OK: ${entrepreneur ? 'Girişimci' : 'Mevcut Ideathon'} kaydı, ortak giriş/oturum, SMTP kodu, şifre sıfırlama, hatalı/tekrar kullanılan/süresi dolmuş kod kontrolü${entrepreneur ? ', başvuruya yeniden erişim' : ''}`);
   }
 } finally {
+  const pendingUsers = await PendingRegistration.find({ email: { $in: pendingEmails } }).select('userId').lean();
+  userIds.push(...pendingUsers.map(item => item.userId));
+  await PendingRegistration.deleteMany({ email: { $in: pendingEmails } });
   await Application.deleteMany({ userId: { $in: userIds } });
   await UserIdeathonRole.deleteMany({ userId: { $in: userIds } });
   await User.deleteMany({ _id: { $in: userIds } });

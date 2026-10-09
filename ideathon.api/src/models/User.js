@@ -77,9 +77,14 @@ const userSchema = new mongoose.Schema({
     }
   }],
 
+  emailVerifiedAt: { type: Date, default: null },
+  sessionVersion: { type: Number, default: 0 },
+
   // Şifre sıfırlama için
   passwordResetCode: { type: String, select: false },
   passwordResetExpires: { type: Date, select: false },
+  passwordResetAttempts: { type: Number, select: false },
+  passwordResetSentAt: { type: Date, select: false },
 
   // Email Tercihleri (Toplantı Sistemi için)
   emailPreferences: {
@@ -123,6 +128,13 @@ const userSchema = new mongoose.Schema({
 // Missing legacy phone numbers are allowed. Normalized numbers remain unique.
 userSchema.index({ phoneKey: 1 }, { name: 'user_phone_unique', unique: true, partialFilterExpression: { phoneKey: { $type: 'string' } } });
 userSchema.pre('validate', function(next) {
+  if (!this.isNew && this.isModified('email')) {
+    this.emailVerifiedAt = null;
+    this.passwordResetCode = undefined;
+    this.passwordResetExpires = undefined;
+    this.passwordResetAttempts = undefined;
+    this.passwordResetSentAt = undefined;
+  }
   if (this.isModified('phone')) {
     if (!this.phone?.trim()) this.phoneKey = undefined;
     else {
@@ -179,7 +191,9 @@ userSchema.methods.addJuriOperation = function(operationData) {
 userSchema.methods.createPasswordResetCode = function() {
   const resetCode = crypto.randomInt(100000, 1000000).toString();
 
-  this.passwordResetCode = resetCode;
+  this.passwordResetCode = require('../services/authMail').codeDigest('password_reset', this.email, resetCode);
+  this.passwordResetAttempts = 0;
+  this.passwordResetSentAt = new Date();
 
   // 15 dakika geçerli
   this.passwordResetExpires = Date.now() + 15 * 60 * 1000; // 15 minutes

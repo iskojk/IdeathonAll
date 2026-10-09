@@ -135,6 +135,42 @@
   animation: spin 1s linear infinite;
 }
 
+/* Keep authentication actions stationary in every interaction state. */
+.auth-section :is(.submit-btn-primary, .submit-btn-secondary, .back-to-home-btn),
+.auth-section :is(.submit-btn-primary, .submit-btn-secondary, .back-to-home-btn):is(:hover, :active, :focus, :disabled),
+.auth-verification-actions .btn,
+.auth-verification-actions .btn:is(:hover, :active, :focus, :disabled) {
+  transform: none;
+  transition-property: background-color, color, border-color, box-shadow, opacity;
+}
+
+.auth-section :is(.submit-btn-primary, .submit-btn-secondary) {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.auth-section :is(.submit-btn-primary, .back-to-home-btn):hover i {
+  transform: none;
+}
+
+.auth-section .auth-verification-actions .btn {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-width: 1px;
+  border-style: solid;
+  font-size: 14px;
+  line-height: 20px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.auth-section .auth-verification-actions .btn-link {
+  border-color: transparent;
+}
+
 /* Secondary Button */
 .submit-btn-secondary {
   display: inline-flex;
