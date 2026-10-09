@@ -329,7 +329,7 @@ const TeamEvaluationForm = ({ teamName }) => {
           />
           {totalScore > maxTotalScore && (
             <Alert severity="error" sx={{ mt: 2 }}>
-              Toplam puan {maxTotalScore}'ü aşamaz!
+              Toplam puan {maxTotalScore}&#39;ü aşamaz!
             </Alert>
           )}
         </CardContent>
@@ -824,7 +824,7 @@ const TeamEvaluationForm = ({ teamName }) => {
             {/* Uyarı Mesajları */}
             {!isFormValid && (
               <Alert severity="error" sx={{ borderRadius: 1 }}>
-                Toplam puan {maxTotalScore}'ü aşamaz. Lütfen puanları kontrol edin.
+                Toplam puan {maxTotalScore}&#39;ü aşamaz. Lütfen puanları kontrol edin.
               </Alert>
             )}
             

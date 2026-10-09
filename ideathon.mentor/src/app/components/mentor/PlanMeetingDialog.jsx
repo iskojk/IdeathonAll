@@ -164,7 +164,7 @@ const PlanMeetingDialog = ({
             </Box>
           ) : assignedUsers.length === 0 ? (
             <Alert severity="warning">
-              Bu ideathon'da onaylanmış başvuru sahibi bulunmamaktadır.
+              Bu ideathon&#39;da onaylanmış başvuru sahibi bulunmamaktadır.
             </Alert>
           ) : (
             <Autocomplete

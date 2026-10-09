@@ -65,7 +65,7 @@ const OtherFramework = () => {
 
                 <Box display="flex" flexWrap="wrap" justifyContent="center" gap={3} mt={11}>
                     {frameworks.map((framework, i) => (
-                        <Link href={framework.link} target='_blank'>
+                        <Link key={framework.name} href={framework.link} target='_blank'>
                             <Box p={3} display="flex" alignItems="center" justifyContent="center" flexDirection="column" bgcolor={framework.bgcolor} width={180} height={180} sx={{
                                 transition: ".1s ease-in",
                                 "&:hover": {

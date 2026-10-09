@@ -1,5 +1,6 @@
 const express = require('express');
 const authController = require('../controllers/authController');
+const { passwordResetLimits } = require('../services/passwordResetLimits');
 const {
   authenticate,
   requireSuperAdmin,
@@ -73,11 +74,13 @@ router.post('/logout',
 
 // Şifre sıfırlama isteği
 router.post('/forgot-password',
+  ...passwordResetLimits({ ipLimit: 10, accountLimit: 3 }),
   authController.forgotPassword
 );
 
 // Şifre sıfırlama
 router.post('/reset-password',
+  ...passwordResetLimits(),
   authController.resetPassword
 );
 

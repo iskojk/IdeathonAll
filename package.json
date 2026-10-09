@@ -19,7 +19,8 @@
     "migrate:entrepreneur-numbers": "node scripts/migrate-entrepreneur-numbers.mjs",
     "verify:entrepreneur-numbers": "node scripts/verify-entrepreneur-numbers.mjs",
     "verify:entrepreneur-access": "node scripts/verify-entrepreneur-access.mjs",
-    "verify:entrepreneur-draft-versions": "node scripts/verify-entrepreneur-draft-versions.mjs"
+    "verify:entrepreneur-draft-versions": "node scripts/verify-entrepreneur-draft-versions.mjs",
+    "test:verification-target": "node --test scripts/tests/verification-target.test.mjs"
   },
   "engines": {
     "node": ">=20"

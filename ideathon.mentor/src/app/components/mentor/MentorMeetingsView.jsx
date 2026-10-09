@@ -339,7 +339,7 @@ const MentorMeetingsView = () => {
                                 İptal Sebebi:
                               </Typography>
                               <Typography variant="body2" sx={{ fontStyle: "italic", color: "#E65100" }}>
-                                "{meeting.cancellationReason}"
+                                &quot;{meeting.cancellationReason}&quot;
                               </Typography>
                               {meeting.cancelledBy && (
                                 <Typography variant="caption" sx={{ display: "block", mt: 0.5, color: "#E65100" }}>

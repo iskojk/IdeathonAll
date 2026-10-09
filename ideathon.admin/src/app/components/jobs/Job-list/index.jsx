@@ -330,7 +330,7 @@ const JobList = () => {
         <DialogTitle>İlanı Sil</DialogTitle>
         <DialogContent>
           <Typography>
-            "{menuJob?.title}" pozisyonlu ilanı silmek istediğinize emin misiniz?
+            &quot;{menuJob?.title}&quot; pozisyonlu ilanı silmek istediğinize emin misiniz?
           </Typography>
         </DialogContent>
         <DialogActions>

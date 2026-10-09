@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
 
   // Production optimizations
   poweredByHeader: false,
@@ -45,16 +44,7 @@ const nextConfig = {
   experimental: {
     optimizeCss: true,
     scrollRestoration: true,
-  },
-
-  // Disable TypeScript
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-
-  // Ensure JavaScript is used
-  eslint: {
-    ignoreDuringBuilds: true,
+    ...(process.env.NEXT_BUILD_CPUS ? { cpus: Number(process.env.NEXT_BUILD_CPUS) } : {}),
   },
 
   // Optimize for production
@@ -68,6 +58,7 @@ const nextConfig = {
 
   // Webpack optimization
   webpack: (config, { dev, isServer }) => {
+    if (dev && process.env.NEXT_DEV_CACHE_OFF === '1') config.cache = false;
     // Optimize bundle
     if (!dev && !isServer) {
       config.optimization.splitChunks.chunks = 'all';

@@ -574,7 +574,7 @@ const MentorMeetingDetailView = ({ meetingId }) => {
                       
                       {fb.comment && (
                         <Typography variant="body2" sx={{ fontStyle: "italic", mb: 1 }}>
-                          "{fb.comment}"
+                          &quot;{fb.comment}&quot;
                         </Typography>
                       )}
                       
@@ -761,7 +761,7 @@ const MentorMeetingDetailView = ({ meetingId }) => {
                     </Typography>
                     <Paper sx={{ p: 2, bgcolor: "white", borderRadius: 1 }}>
                       <Typography variant="body1" sx={{ fontStyle: "italic", color: "#E65100" }}>
-                        "{meeting.cancellationReason}"
+                        &quot;{meeting.cancellationReason}&quot;
                       </Typography>
                     </Paper>
                   </Box>
@@ -958,7 +958,7 @@ const MentorMeetingDetailView = ({ meetingId }) => {
         </DialogTitle>
         <DialogContent sx={{ mt: 2 }}>
           <Alert severity="info" sx={{ mb: 2 }}>
-            Toplantı durumunu <strong>'{getStatusLabel(newStatus)}'</strong> olarak değiştirmek üzeresiniz.
+            Toplantı durumunu <strong>&#39;{getStatusLabel(newStatus)}&#39;</strong> olarak değiştirmek üzeresiniz.
           </Alert>
           
           {(newStatus === "cancelled" || newStatus === "no_show") && (

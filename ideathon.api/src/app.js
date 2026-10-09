@@ -3,7 +3,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
-const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
+const { rateLimit } = require('express-rate-limit');
+const { generalRateLimitKey } = require('./services/rateLimitKey');
 const mongoose = require('mongoose');
 require('dotenv').config();
 
@@ -33,20 +34,7 @@ app.use(compression());
 const generalLimiter = rateLimit({
   windowMs: 60 * 100000,
   max: 30000,
-  keyGenerator: (req) => {
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      try {
-        const jwt = require('jsonwebtoken');
-        const decoded = jwt.verify(
-          authHeader.split(' ')[1],
-          process.env.JWT_SECRET
-        );
-        if (decoded?.id) return `user_${decoded.id}`;
-      } catch (_) { /* token gecersiz — IP'ye dusecek */ }
-    }
-    return `ip_${ipKeyGenerator(req.ip)}`;
-  },
+  keyGenerator: generalRateLimitKey,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Çok fazla istek. Lütfen biraz bekleyin.' }

@@ -1,3 +1,4 @@
+import { verificationTarget } from './verification-target.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
@@ -6,6 +7,7 @@ import { createRequire } from 'node:module';
 const requireAPI = createRequire(new URL('../ideathon.api/package.json', import.meta.url));
 const env = requireAPI('dotenv').parse(readFileSync(new URL('../ideathon.api/.env', import.meta.url)));
 assert.equal(env.MONGODB_URI, 'mongodb://127.0.0.1:27027/ideathon_local', 'Bu test yalnızca yerel veritabanında çalışır.');
+const target = verificationTarget(env.MONGODB_URI);
 assert.equal(env.SMTP_HOST, '127.0.0.1', 'Test e-postaları yalnızca Mailpit üzerinden gönderilir.');
 assert.equal(env.SMTP_PORT, '1025');
 const mongoose = requireAPI('mongoose');
@@ -15,7 +17,7 @@ const UserIdeathonRole = requireAPI('./src/models/UserIdeathonRole');
 const Application = requireAPI('./src/models/EntrepreneurApplication');
 const userIds = [];
 const messageIds = [];
-const base = 'http://127.0.0.1:5010/api';
+const base = `${target.apiOrigin}/api`;
 const mailpit = 'http://127.0.0.1:8025';
 const authSource = readFileSync(new URL('../ideathon.frontend/lib/auth.js', import.meta.url), 'utf8');
 const { getAuthUser } = await import(`data:text/javascript;base64,${Buffer.from(authSource).toString('base64')}`);
@@ -50,7 +52,7 @@ async function resetCodeFromEmail(email) {
   throw new Error('Şifre sıfırlama e-postası yerel Mailpit kutusuna ulaşmadı.');
 }
 
-await mongoose.connect(env.MONGODB_URI);
+await mongoose.connect(target.mongoURI);
 try {
   const event = await Ideathon.findOne({ registrationOpen: true }).select('_id slug').lean();
   for (const entrepreneur of [false, true]) {
@@ -87,8 +89,19 @@ try {
 
     await request('/auth/forgot-password', { method: 'POST', body: { email } });
     const code = await resetCodeFromEmail(email);
+    const withPendingReset = JSON.stringify(await request('/auth/me', { token }));
+    assert.equal(withPendingReset.includes('passwordResetCode'), false);
+    assert.equal(withPendingReset.includes('passwordResetExpires'), false);
     await request('/auth/reset-password', { method: 'POST', expected: 400, body: { email, code: '000000', newPassword } });
-    await request('/auth/reset-password', { method: 'POST', body: { email, code, newPassword } });
+    const simultaneous = await Promise.all(Array.from({ length: 3 }, async () => {
+      const response = await fetch(`${base}/auth/reset-password`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code, newPassword }), signal: AbortSignal.timeout(20000),
+      });
+      await response.arrayBuffer();
+      return response.status;
+    }));
+    assert.deepEqual(simultaneous.sort(), [200, 400, 400], 'A reset code must be consumed exactly once under concurrent requests.');
     await request('/auth/reset-password', { method: 'POST', expected: 400, body: { email, code, newPassword } });
     await request('/auth/login', { method: 'POST', expected: 401, body: { email, password } });
     const relogin = await request('/auth/login', { method: 'POST', body: { email, password: newPassword } });

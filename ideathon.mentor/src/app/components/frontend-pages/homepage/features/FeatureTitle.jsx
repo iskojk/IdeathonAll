@@ -16,9 +16,9 @@ const FeatureTitle = () => {
                 sx={{
                     textAlign: "center"
                 }}>
-                <Typography variant="body1">Introducing Modernize's Light & Dark Skins, <Box component="span" sx={{
+                <Typography variant="body1">Introducing Modernize&#39;s Light & Dark Skins, <Box component="span" sx={{
                     fontWeight: 500
-                }}>Exceptional Dashboards</Box>, and <br/>Dynamic Pages - Stay Updated on What's New!</Typography>
+                }}>Exceptional Dashboards</Box>, and <br/>Dynamic Pages - Stay Updated on What&#39;s New!</Typography>
             </Grid>
         </Grid>)
     );

@@ -1,3 +1,4 @@
+import { verificationTarget } from './verification-target.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -7,7 +8,8 @@ const requireAPI = createRequire(new URL('../ideathon.api/package.json', import.
 const mongoose = requireAPI('mongoose');
 const env = requireAPI('dotenv').parse(readFileSync(new URL('../ideathon.api/.env', import.meta.url)));
 assert.equal(env.MONGODB_URI, 'mongodb://127.0.0.1:27027/ideathon_local');
-await mongoose.connect(env.MONGODB_URI, { autoIndex: false });
+const target = verificationTarget(env.MONGODB_URI);
+await mongoose.connect(target.mongoURI, { autoIndex: false });
 const User = requireAPI('./src/models/User');
 const Application = requireAPI('./src/models/EntrepreneurApplication');
 const Document = requireAPI('./src/models/EntrepreneurDocument');
@@ -26,7 +28,7 @@ async function token(role) {
 }
 async function request(path, roleToken, method = 'GET', body, expected = 200) {
   const multipart = body instanceof FormData;
-  const response = await fetch(`http://127.0.0.1:5010/api${path}`, { method, headers: { ...(roleToken ? { Authorization: `Bearer ${roleToken}` } : {}), ...(body && !multipart ? { 'Content-Type': 'application/json' } : {}) }, body: multipart ? body : body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(15000) });
+  const response = await fetch(`${target.apiOrigin}/api${path}`, { method, headers: { ...(roleToken ? { Authorization: `Bearer ${roleToken}` } : {}), ...(body && !multipart ? { 'Content-Type': 'application/json' } : {}) }, body: multipart ? body : body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(15000) });
   const failureMessage = response.status !== expected ? (await response.clone().json().catch(() => ({}))).message || '' : '';
   assert.equal(response.status, expected, `${method} ${path}: HTTP ${response.status} (beklenen ${expected}) ${failureMessage}`);
   if (response.headers.get('content-type')?.includes('application/pdf') || response.headers.get('content-type')?.includes('spreadsheetml')) return response;

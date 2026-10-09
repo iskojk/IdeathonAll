@@ -11,8 +11,7 @@ class EmailService {
         pass: process.env.SMTP_PASS
       },
       tls: {
-        rejectUnauthorized: false,
-        ciphers: 'SSLv3'
+        rejectUnauthorized: true
       }
     });
 

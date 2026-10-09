@@ -1,3 +1,4 @@
+import { verificationTarget } from './verification-target.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -6,7 +7,8 @@ const requireAPI = createRequire(new URL('../ideathon.api/package.json', import.
 const mongoose = requireAPI('mongoose');
 const env = requireAPI('dotenv').parse(readFileSync(new URL('../ideathon.api/.env', import.meta.url)));
 assert.equal(env.MONGODB_URI, 'mongodb://127.0.0.1:27027/ideathon_local');
-await mongoose.connect(env.MONGODB_URI, { autoIndex: false });
+const target = verificationTarget(env.MONGODB_URI);
+await mongoose.connect(target.mongoURI, { autoIndex: false });
 const User = requireAPI('./src/models/User');
 const Application = requireAPI('./src/models/EntrepreneurApplication');
 const Document = requireAPI('./src/models/EntrepreneurDocument');
@@ -22,7 +24,7 @@ async function account(role) {
   return { user, token: requireAPI('jsonwebtoken').sign({ userId: String(user._id), role }, env.JWT_SECRET, { expiresIn: '10m' }) };
 }
 async function request(path, account, method = 'GET', body, expected = 200) {
-  const response = await fetch(`http://127.0.0.1:5010/api/entrepreneurs${path}`, { method,
+  const response = await fetch(`${target.apiOrigin}/api/entrepreneurs${path}`, { method,
     headers: { ...(account ? { Authorization: `Bearer ${account.token}` } : {}), ...(body && !(body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}) },
     body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(15000) });
   assert.equal(response.status, expected, `${method} ${path}: ${(await response.clone().json().catch(() => ({}))).message || response.status}`);

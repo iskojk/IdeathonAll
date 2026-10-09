@@ -78,8 +78,8 @@ const userSchema = new mongoose.Schema({
   }],
 
   // Şifre sıfırlama için
-  passwordResetCode: String,
-  passwordResetExpires: Date,
+  passwordResetCode: { type: String, select: false },
+  passwordResetExpires: { type: Date, select: false },
 
   // Email Tercihleri (Toplantı Sistemi için)
   emailPreferences: {
@@ -177,7 +177,7 @@ userSchema.methods.addJuriOperation = function(operationData) {
 
 // Şifre reset kodu oluşturma method (6 haneli sayı)
 userSchema.methods.createPasswordResetCode = function() {
-  const resetCode = Math.floor(100000 + Math.random() * 900000).toString(); // 6 haneli sayı
+  const resetCode = crypto.randomInt(100000, 1000000).toString();
 
   this.passwordResetCode = resetCode;
 

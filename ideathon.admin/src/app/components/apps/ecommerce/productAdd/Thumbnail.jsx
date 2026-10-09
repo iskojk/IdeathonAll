@@ -49,7 +49,7 @@ const Thumbnail = () => {
           borderColor: 'primary.main'
         }}>
         <input {...getInputProps()} />
-        <p>Drag 'n' drop some files here, or click to select files</p>
+        <p>Drag &#39;n&#39; drop some files here, or click to select files</p>
       </Box>
       <Typography
         variant="body2"

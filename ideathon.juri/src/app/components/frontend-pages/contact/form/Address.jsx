@@ -36,7 +36,7 @@ const Address = () => {
                     }}>Reach Out Today</Typography>
                 <Typography variant="body1" color="white" sx={{
                     lineHeight: 1.6
-                }}>Have questions or need assistance? We're just a message away.</Typography>
+                }}>Have questions or need assistance? We&#39;re just a message away.</Typography>
 
                 <Divider sx={{ opacity: 0.3, my: "40px" }} />
 

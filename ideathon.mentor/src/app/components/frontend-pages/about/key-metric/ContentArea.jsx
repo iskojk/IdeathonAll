@@ -18,7 +18,7 @@ const ContentArea = () => {
             }}>Key metric at a glance</Typography>
         <Typography sx={{
             lineHeight: 1.9
-        }} >From the year we were founded to the impressive customer base we've built, and the growth percentages that reflect our continuous improvement, these numbers tell our story at a glance. Explore the data that drives our mission and underscores our commitment to excellence.</Typography>
+        }} >From the year we were founded to the impressive customer base we&#39;ve built, and the growth percentages that reflect our continuous improvement, these numbers tell our story at a glance. Explore the data that drives our mission and underscores our commitment to excellence.</Typography>
     </>);
 };
 

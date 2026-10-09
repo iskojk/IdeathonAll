@@ -49,7 +49,7 @@ const Banner = () => {
                                 fontSize: {
                                     xs: '34px', sm: '48px', lg: '56px'
                                 }
-                            }}>We'd love to hear from you</Typography>
+                            }}>We&#39;d love to hear from you</Typography>
                     </Grid>
                 </Grid>
 

@@ -1,10 +1,11 @@
+import { verificationTarget } from './verification-target.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 const requireFrontend = createRequire(new URL('../ideathon.frontend/package.json', import.meta.url));
 const { io } = requireFrontend('socket.io-client');
 const { accounts } = JSON.parse(readFileSync(new URL('../.local/credentials.json', import.meta.url)));
-const base = 'http://127.0.0.1:5010';
+const base = verificationTarget().apiOrigin;
 async function request(path, options = {}) {
   const response = await fetch(`${base}${path}`, { ...options, signal: AbortSignal.timeout(15000) });
   const body = await response.json();

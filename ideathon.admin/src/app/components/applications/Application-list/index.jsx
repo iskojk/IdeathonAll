@@ -292,7 +292,7 @@ const PreEvaluationsCell = ({ preEvaluations }) => {
                     {evaluation.comment && (
                       <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2, borderLeft: `3px solid ${theme.palette[getDecisionColor(selectedDecision)]?.main}` }}>
                         <Typography variant="body2" sx={{ fontStyle: 'italic' }}>
-                          "{evaluation.comment}"
+                          &quot;{evaluation.comment}&quot;
                         </Typography>
                       </Box>
                     )}
@@ -1676,7 +1676,7 @@ const ApplicationList = () => {
                               </Box>
                               {selectedApp.interestsInfo?.hasPreviousExperience && selectedApp.interestsInfo?.previousExperienceDescription && (
                                 <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
-                                  "{selectedApp.interestsInfo.previousExperienceDescription}"
+                                  &quot;{selectedApp.interestsInfo.previousExperienceDescription}&quot;
                                 </Typography>
                               )}
                             </Stack>
@@ -1751,7 +1751,7 @@ const ApplicationList = () => {
                                 Motivasyon
                               </Typography>
                               <Typography variant="body1" sx={{ fontStyle: 'italic' }}>
-                                "{selectedApp.competenciesInfo.motivation}"
+                                &quot;{selectedApp.competenciesInfo.motivation}&quot;
                               </Typography>
                             </Box>
                           </Grid>
@@ -1763,7 +1763,7 @@ const ApplicationList = () => {
                                 Kendini Tanımlama
                               </Typography>
                               <Typography variant="body1" sx={{ fontStyle: 'italic' }}>
-                                "{selectedApp.competenciesInfo.selfDescription}"
+                                &quot;{selectedApp.competenciesInfo.selfDescription}&quot;
                               </Typography>
                             </Box>
                           </Grid>
@@ -1949,7 +1949,7 @@ const ApplicationList = () => {
                                 Sağlık Beyanı
                               </Typography>
                               <Typography variant="body1" sx={{ fontStyle: 'italic' }}>
-                                "{selectedApp.healthInfo.healthDeclaration}"
+                                &quot;{selectedApp.healthInfo.healthDeclaration}&quot;
                               </Typography>
                             </Box>
                           </Grid>

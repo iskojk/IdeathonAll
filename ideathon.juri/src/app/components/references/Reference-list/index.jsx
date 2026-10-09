@@ -251,7 +251,7 @@ const ReferenceList = () => {
         <DialogTitle>Referans Sil</DialogTitle>
         <DialogContent>
           <Typography>
-            "{menuRow?.name}" referansını silmek istediğinize emin misiniz?
+            &quot;{menuRow?.name}&quot; referansını silmek istediğinize emin misiniz?
           </Typography>
         </DialogContent>
         <DialogActions>

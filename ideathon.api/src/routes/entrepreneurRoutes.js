@@ -11,7 +11,8 @@ const { normalizeDocumentName } = require('../services/entrepreneurDocumentName'
 const { workingApplication } = require('../services/entrepreneurWorkflow');
 
 const router = express.Router();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024, files: 1, fields: 1, parts: 3 } });
+// Busboy rejects at the configured limit, so add one byte for an inclusive 10 MiB maximum.
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 + 1, files: 1, fields: 1, parts: 3 } });
 router.use(authenticate, requireActiveUser);
 router.use((req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
 

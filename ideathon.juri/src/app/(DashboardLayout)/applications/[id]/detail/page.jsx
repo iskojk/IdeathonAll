@@ -556,7 +556,7 @@ const ApplicationDetail = () => {
                         Deneyim Açıklaması
                       </Typography>
                       <Typography variant="body2" sx={{ fontStyle: "italic", p: 2, bgcolor: "grey.50", borderRadius: 2 }}>
-                        "{interestsInfo.previousExperienceDescription}"
+                        &quot;{interestsInfo.previousExperienceDescription}&quot;
                       </Typography>
                     </Box>
                   )}
@@ -610,7 +610,7 @@ const ApplicationDetail = () => {
                         Motivasyon
                       </Typography>
                       <Typography variant="body2" sx={{ fontStyle: "italic", p: 2, bgcolor: "grey.50", borderRadius: 2 }}>
-                        "{competenciesInfo.motivation}"
+                        &quot;{competenciesInfo.motivation}&quot;
                       </Typography>
                     </Box>
                   )}

@@ -859,7 +859,7 @@ const IdeathonManagement = () => {
               Henuz ideathon bulunmuyor
             </Typography>
             <Typography variant="body2" color="text.disabled" sx={{ mb: 3 }}>
-              Ilk ideathon'unuzu olusturarak baslayabilirsiniz.
+              Ilk ideathon&#39;unuzu olusturarak baslayabilirsiniz.
             </Typography>
             <Button
               variant="contained"
@@ -1206,7 +1206,7 @@ const IdeathonManagement = () => {
           </DialogTitle>
           <DialogContent>
             <Typography>
-              <strong>{selectedIdeathon?.name}</strong> ideathon'unu silmek istediginizden emin misiniz?
+              <strong>{selectedIdeathon?.name}</strong> ideathon&#39;unu silmek istediginizden emin misiniz?
             </Typography>
             <Alert severity="warning" sx={{ mt: 2 }}>
               Aktif kullanici atamasi varsa silme islemi engellenecektir.
@@ -1457,7 +1457,7 @@ const IdeathonManagement = () => {
                   </Box>
                 ) : (
                   <Alert severity="info" sx={{ mb: 2 }}>
-                    Bu ideathon'a henuz kullanici atanmamis.
+                    Bu ideathon&#39;a henuz kullanici atanmamis.
                   </Alert>
                 )}
 

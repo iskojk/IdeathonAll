@@ -6,7 +6,7 @@ const drafts = require('../services/entrepreneurFormDrafts');
 const controller = require('../controllers/entrepreneurAdminController');
 
 const router = express.Router();
-const importUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: require('../services/entrepreneurImport').MAX_SIZE, files: 1, fields: 0, parts: 2 } });
+const importUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: require('../services/entrepreneurImport').MAX_SIZE + 1, files: 1, fields: 0, parts: 2 } });
 // Girişimci havuzu globaldir; seçili Ideathon bu kayıtları filtrelemez.
 router.use(authenticate, requireSuperAdminOrAdmin);
 router.use((req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });

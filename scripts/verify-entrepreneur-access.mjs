@@ -1,3 +1,4 @@
+import { verificationTarget } from './verification-target.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -5,11 +6,12 @@ import { createHash, randomBytes } from 'node:crypto';
 const r = createRequire(new URL('../ideathon.api/package.json', import.meta.url));
 const env = r('dotenv').parse(readFileSync(new URL('../ideathon.api/.env', import.meta.url)));
 assert.equal(env.MONGODB_URI, 'mongodb://127.0.0.1:27027/ideathon_local');
+const target = verificationTarget(env.MONGODB_URI);
 const mongoose = r('mongoose');
 const User = r('./src/models/User');
 const userIds = [];
 const hash = value => createHash('sha256').update(mongoose.mongo.BSON.serialize(value)).digest('hex');
-await mongoose.connect(env.MONGODB_URI, { autoIndex: false });
+await mongoose.connect(target.mongoURI, { autoIndex: false });
 const db = mongoose.connection.db;
 const originals = new Map();
 for (const name of ['users', 'entrepreneurapplications', 'entrepreneurdocuments', 'entrepreneurformsettings', 'entrepreneurformdrafts', 'entrepreneurapplicationcounters']) originals.set(name, await db.collection(name).find({}).toArray());
@@ -19,7 +21,7 @@ async function account(role) {
   return { user, token: r('jsonwebtoken').sign({ userId: String(user._id), role }, env.JWT_SECRET, { expiresIn: '10m' }) };
 }
 async function request(path, who, method = 'GET', body, expected = 200) {
-  const response = await fetch(`http://127.0.0.1:5010/api/entrepreneurs/admin${path}`, { method, headers: { Authorization: `Bearer ${who.token}`, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(20000) });
+  const response = await fetch(`${target.apiOrigin}/api/entrepreneurs/admin${path}`, { method, headers: { Authorization: `Bearer ${who.token}`, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(20000) });
   assert.equal(response.status, expected, `${method} ${path}: beklenen ${expected}, gelen ${response.status}`);
   return response.headers.get('content-type')?.includes('application/json') ? response.json() : response;
 }

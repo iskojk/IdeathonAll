@@ -316,7 +316,7 @@ const FeedbackManagementView = () => {
                           <>
                             <Divider sx={{ my: 1.5 }} />
                             <Typography variant="body2" sx={{ fontStyle: "italic", mb: 1 }}>
-                              "{feedback.comment}"
+                              &quot;{feedback.comment}&quot;
                             </Typography>
                           </>
                         )}
@@ -426,7 +426,7 @@ const FeedbackManagementView = () => {
                           <>
                             <Divider sx={{ my: 1.5 }} />
                             <Typography variant="body2" sx={{ mb: 1 }}>
-                              "{feedback.comment}"
+                              &quot;{feedback.comment}&quot;
                             </Typography>
                           </>
                         )}

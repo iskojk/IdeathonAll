@@ -7,7 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "test:auth": "node --test tests/auth*.test.mjs",
     "test:entrepreneurs": "node --test tests/entrepreneur*.test.mjs tests/searchOptions.test.mjs",
     "dockerbuild": "docker build -t emlakfrontend .",
@@ -19,7 +19,7 @@
     "bootstrap": "^5.3.2",
     "critters": "^0.0.22",
     "jquery": "^3.7.1",
-    "next": "^14.0.4",
+    "next": "15.5.27",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "sass": "^1.69.5",
@@ -41,5 +41,13 @@
     "innovation"
   ],
   "author": "EKA Enerji ve Teknoloji A.Ş.",
-  "license": "Proprietary"
+  "license": "Proprietary",
+  "overrides": {
+    "postcss": "8.5.29"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "3.3.1",
+    "eslint": "9.39.5",
+    "eslint-config-next": "15.5.27"
+  }
 }

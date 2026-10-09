@@ -21,7 +21,7 @@ const MobileSidebar = () => {
 
             <Stack direction="column" spacing={2} >
                 {NavLinks.map((navlink, i) => (
-                    <Button color="inherit" href={navlink.to} sx={{
+                    <Button key={navlink.to} color="inherit" href={navlink.to} sx={{
                         justifyContent: 'start'
                     }}>{navlink.title} {navlink.new ?
                         <Chip label="New" size="small" sx={{

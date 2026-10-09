@@ -785,7 +785,7 @@ class AuthController {
     try {
       const { email } = req.body;
 
-      if (!email) {
+      if (typeof email !== 'string' || !email) {
         return res.status(400).json({
           success: false,
           message: 'Email alanı zorunludur'
@@ -833,7 +833,7 @@ class AuthController {
         });
       } catch (emailError) {
         // Email gönderilemezse token'ı temizle
-        user.passwordResetToken = undefined;
+        user.passwordResetCode = undefined;
         user.passwordResetExpires = undefined;
         await user.save();
 
@@ -856,7 +856,7 @@ class AuthController {
     try {
       const { email, code, newPassword } = req.body;
 
-      if (!email || !code || !newPassword) {
+      if (typeof email !== 'string' || typeof code !== 'string' || typeof newPassword !== 'string' || !email || !/^\d{6}$/.test(code) || !newPassword) {
         return res.status(400).json({
           success: false,
           message: 'Email, kod ve yeni şifre zorunludur'
@@ -875,7 +875,7 @@ class AuthController {
         email: email.toLowerCase(),
         passwordResetCode: code,
         passwordResetExpires: { $gt: Date.now() }
-      });
+      }).select('+passwordResetCode +passwordResetExpires');
 
       if (!user) {
         return res.status(400).json({
@@ -884,11 +884,14 @@ class AuthController {
         });
       }
 
-      // Şifreyi güncelle
-      user.password = newPassword;
-      user.passwordResetCode = undefined;
-      user.passwordResetExpires = undefined;
-      await user.save();
+      // Consume the code atomically so simultaneous requests cannot reuse it.
+      const password = await require('bcryptjs').hash(newPassword, 12);
+      const consumed = await User.updateOne({
+        _id: user._id, passwordResetCode: code, passwordResetExpires: { $gt: Date.now() }
+      }, { $set: { password }, $unset: { passwordResetCode: 1, passwordResetExpires: 1 } }, { runValidators: true });
+      if (consumed.modifiedCount !== 1) {
+        return res.status(400).json({ success: false, message: 'Geçersiz kod, süresi dolmuş veya yanlış email' });
+      }
 
       res.status(200).json({
         success: true,

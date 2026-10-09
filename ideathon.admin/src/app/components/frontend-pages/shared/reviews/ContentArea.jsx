@@ -25,7 +25,7 @@ const ContentArea = () => {
         </Typography>
         <Typography variant="body1" sx={{
             lineHeight: 1.8
-        }}>Our users' feedback is a testament to our commitment to quality and user satisfaction. Read what they have to say about their journey with us.</Typography>
+        }}>Our users&#39; feedback is a testament to our commitment to quality and user satisfaction. Read what they have to say about their journey with us.</Typography>
     </>);
 };
 

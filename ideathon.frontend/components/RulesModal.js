@@ -74,10 +74,10 @@ export default function RulesModal({ isOpen, onClose, onAccept }) {
                 GENEL KURALLAR
               </h4>
               <ul style={{ paddingLeft: '20px' }}>
-                <li>Emlak Konut Ideathon'a katılım gönüllülük esasına dayanır.</li>
+                <li>Emlak Konut Ideathon&#39;a katılım gönüllülük esasına dayanır.</li>
                 <li>Katılımcılar en az 18 yaşında olmalıdır.</li>
                 <li>Katılım ekip halinde (maksimum 5 kişi) gerçekleştirilebilir.</li>
-                <li>Etkinlik dili Türkçe'dir.</li>
+                <li>Etkinlik dili Türkçe&#39;dir.</li>
               </ul>
             </div>
 
@@ -98,7 +98,7 @@ export default function RulesModal({ isOpen, onClose, onAccept }) {
                 FIKRI MÜLKİYET HAKLARI
               </h4>
               <ul style={{ paddingLeft: '20px' }}>
-                <li>Geliştirilen tüm fikirler Emlak Konut'a aittir.</li>
+                <li>Geliştirilen tüm fikirler Emlak Konut&#39;a aittir.</li>
                 <li>Katılımcılar, fikirlerinin özgün olduğunu taahhüt eder.</li>
                 <li>Üçüncü kişilerin haklarına tecavüz eden fikirler diskalifiye edilir.</li>
               </ul>

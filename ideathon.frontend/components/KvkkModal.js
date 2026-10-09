@@ -79,14 +79,14 @@ export default function KvkkModal({ isOpen, onClose, onAccept }) {
           <div className="kvkk-content" style={{ fontSize: '14px', color: '#374151' }}>
 
             <div style={{ marginBottom: '20px' }}>
-              <p>Kişisel verilerin işlenmesinde başta özel hayatın gizliliği olmak üzere kişilerin temel hak ve özgürlüklerini korumak ve kişisel verileri işleyen gerçek ve tüzel kişilerin yükümlülükleri belirlemek amacıyla 7 Nisan 2016 tarihli ve 29677 Sayılı Resmî Gazete'de yayımlanan 6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") hususunda Emlak Konut Gayrimenkul Yatırım Ortaklığı A.Ş. olarak Veri Sorumlusu sıfatıyla Kanun'un "Veri Sorumlusunun Aydınlatma Yükümlülüğü" başlıklı 10. maddesi uyarınca sizleri bilgilendirmek isteriz.</p>
+              <p>Kişisel verilerin işlenmesinde başta özel hayatın gizliliği olmak üzere kişilerin temel hak ve özgürlüklerini korumak ve kişisel verileri işleyen gerçek ve tüzel kişilerin yükümlülükleri belirlemek amacıyla 7 Nisan 2016 tarihli ve 29677 Sayılı Resmî Gazete&#39;de yayımlanan 6698 sayılı Kişisel Verilerin Korunması Kanunu (&quot;KVKK&quot;) hususunda Emlak Konut Gayrimenkul Yatırım Ortaklığı A.Ş. olarak Veri Sorumlusu sıfatıyla Kanun&#39;un &quot;Veri Sorumlusunun Aydınlatma Yükümlülüğü&quot; başlıklı 10. maddesi uyarınca sizleri bilgilendirmek isteriz.</p>
             </div>
 
             <div style={{ marginBottom: '20px' }}>
               <h4 style={{ color: '#042070', fontSize: '16px', fontWeight: '600', marginBottom: '8px' }}>
                 VERİ SORUMLUSU VE TEMSİLCİSİ
               </h4>
-              <p>Kanun uyarınca "Barbaros Mah. Mor Sümbül Sok. No:7/2 B (Batı Ataşehir) Ataşehir - İstanbul" adresinde faaliyet gösteren "Emlak Konut Gayrimenkul Yatırım Ortaklığı A.Ş." (Bundan böyle kısaca "Şirket" veya "Emlak Konut" olarak anılacaktır.) Veri Sorumlusudur.</p>
+              <p>Kanun uyarınca &quot;Barbaros Mah. Mor Sümbül Sok. No:7/2 B (Batı Ataşehir) Ataşehir - İstanbul&quot; adresinde faaliyet gösteren &quot;Emlak Konut Gayrimenkul Yatırım Ortaklığı A.Ş.&quot; (Bundan böyle kısaca &quot;Şirket&quot; veya &quot;Emlak Konut&quot; olarak anılacaktır.) Veri Sorumlusudur.</p>
             </div>
 
             <div style={{ marginBottom: '20px' }}>
@@ -139,7 +139,7 @@ export default function KvkkModal({ isOpen, onClose, onAccept }) {
               <h4 style={{ color: '#042070', fontSize: '16px', fontWeight: '600', marginBottom: '8px' }}>
                 KİŞİSEL VERİSİ İŞLENEN İLGİLİ KİŞİNİN HAKLARI
               </h4>
-              <p>KVKK'nın 11. maddesi uyarınca aşağıdaki haklara sahipsiniz:</p>
+              <p>KVKK&#39;nın 11. maddesi uyarınca aşağıdaki haklara sahipsiniz:</p>
               <ul style={{ paddingLeft: '20px', marginTop: '8px' }}>
                 <li>Kişisel veri işlenip işlenmediğini öğrenme</li>
                 <li>Kişisel verilerin işlenme amacını öğrenme</li>
@@ -202,7 +202,7 @@ export default function KvkkModal({ isOpen, onClose, onAccept }) {
               cursor: 'pointer',
               fontWeight: '500'
             }}>
-              KVKK Aydınlatma Metni'ni okudum, anladım ve kişisel verilerimin işlenmesine onay veriyorum.
+              KVKK Aydınlatma Metni&#39;ni okudum, anladım ve kişisel verilerimin işlenmesine onay veriyorum.
             </label>
           </div>
 

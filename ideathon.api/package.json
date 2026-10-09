@@ -14,7 +14,8 @@
     "docker:start": "docker run -d --name emlakapi --restart unless-stopped -p 127.0.0.1:5010:5010 --env-file .env.production --log-opt max-size=10m --log-opt max-file=3 emlakapi",
     "docker:stop": "docker stop emlakapi || true && docker rm emlakapi || true",
     "docker:full": "docker build -t emlakapi . && docker stop emlakapi || true && docker rm emlakapi || true && docker run -d --name emlakapi --restart unless-stopped --network analiz-net -p 127.0.0.1:5010:5010 --env-file .env.production -v $(pwd)/uploads:/usr/src/app/uploads --log-opt max-size=10m --log-opt max-file=3 emlakapi",
-    "test:registration": "node --test tests/userPhone.test.cjs"
+    "test:registration": "node --test tests/userPhone.test.cjs",
+    "test:security": "node --test tests/rateLimitKey.test.cjs tests/passwordResetLimits.test.cjs"
   },
   "keywords": [
     "ideathon",
@@ -43,7 +44,7 @@
     "morgan": "^1.10.1",
     "multer": "^1.4.5-lts.1",
     "node-cron": "^4.2.1",
-    "nodemailer": "^7.0.10",
+    "nodemailer": "10.0.16",
     "nodemailer-express-handlebars": "^7.0.0",
     "pdfkit": "^0.20.2",
     "redis": "^4.7.0",
@@ -51,5 +52,10 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
+  },
+  "overrides": {
+    "exceljs": {
+      "uuid": "11.1.1"
+    }
   }
 }
