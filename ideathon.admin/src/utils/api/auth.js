@@ -15,6 +15,16 @@ export const loginUser = async (credentials) => {
   return res.data;
 };
 
+export const sendForgotPassword = async (email) => {
+  const res = await ax.post("/auth/forgot-password", { email });
+  return res.data;
+};
+
+export const resetPassword = async (payload) => {
+  const res = await ax.post("/auth/reset-password", payload);
+  return res.data;
+};
+
 // 🆕 İdeathon seçimi — yeni token döner
 export const selectIdeathonApi = async (ideathonId) => {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;

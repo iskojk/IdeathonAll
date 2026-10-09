@@ -13,5 +13,6 @@ const schema = new mongoose.Schema({
 }, { timestamps: true });
 schema.index({ legacyKey: 1 }, { unique: true, sparse: true });
 schema.index({ updatedAt: -1, _id: -1 });
+schema.index({ createdAt: 1, _id: 1 });
 
 module.exports = mongoose.model('EntrepreneurFormDraft', schema);

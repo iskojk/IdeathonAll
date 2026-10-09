@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import RTL from "@/app/(DashboardLayout)/layout/shared/customizer/RTL";
@@ -19,9 +19,11 @@ const MyApp = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname();
   const dispatch = useDispatch();
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
     dispatch(loadUserFromStorage());
+    setAuthReady(true);
   }, [dispatch]);
 
   useEffect(() => {
@@ -33,10 +35,10 @@ const MyApp = ({ children }) => {
       "/auth/reset-password",
     ];
 
-    if (!isAuthenticated && !publicRoutes.includes(pathname)) {
+    if (authReady && !isAuthenticated && !publicRoutes.includes(pathname)) {
       router.push("/auth/login");
     }
-  }, [isAuthenticated, pathname]);
+  }, [authReady, isAuthenticated, pathname, router]);
 
   return (
     <AppRouterCacheProvider options={{ enableCssLayer: true }}>

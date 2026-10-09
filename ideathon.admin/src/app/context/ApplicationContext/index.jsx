@@ -256,7 +256,7 @@ export const ApplicationProvider = ({ children }) => {
     const fetchDashboardStats = async () => {
         setLoading(true);
         try {
-            const res = await axios.get(`${API_BASE_URL}/applications/dashboard/stats`, {
+            const res = await axios.get(`${API_BASE_URL}/applications/stats/dashboard`, {
                 headers: getAuthHeaders(),
             });
 

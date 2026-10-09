@@ -32,7 +32,7 @@ export default function ResetPasswordForm() {
 
     setLoading(true);
     try {
-      const res = await resetPassword(email, code.trim(), newPassword);
+      const res = await resetPassword({ email, code: code.trim(), newPassword });
       toast.success(res.message || "Şifre başarıyla güncellendi.");
       window.location.href = "/auth/login";
     } catch (error) {

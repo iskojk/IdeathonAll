@@ -42,7 +42,7 @@ async function listDrafts(query = {}) {
   const filter = { deletedAt: view === 'deleted' ? { $ne: null } : null };
   const [total, records] = await Promise.all([
     Draft.countDocuments(filter),
-    Draft.find(filter).sort(view === 'deleted' ? { deletedAt: -1, _id: -1 } : { updatedAt: -1, _id: -1 }).skip((page - 1) * limit).limit(limit)
+    Draft.find(filter).sort(view === 'deleted' ? { deletedAt: -1, _id: -1 } : { createdAt: 1, _id: 1 }).skip((page - 1) * limit).limit(limit)
       .select('name revision createdAt updatedAt deletedAt form.title form.questions.type').lean(),
   ]);
   return { items: records.map(({ form, ...record }) => ({ ...record, title: form.title, questionCount: form.questions.filter(q => q.type !== 'consent').length })), pagination: { page, limit, total, pages: Math.max(1, Math.ceil(total / limit)) } };

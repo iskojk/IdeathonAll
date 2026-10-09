@@ -53,10 +53,14 @@ try {
   draft = await drafts.saveDraft(draft._id, { name: historical.version.name, form: historical.version.form, revision: historical.draft.revision });
   assert.equal(draft.revision, 3);
   assert.deepEqual(draft.form, original.form);
+  // A copy appears below its source; saving a version must not reorder cards.
+  const listed = (await drafts.listDrafts()).items.map(item => String(item._id));
+  assert(listed.indexOf(String(draft._id)) < listed.indexOf(String(copied._id)), 'Yeni kopya kaynağından sonra listelenmeli.');
   const beforeInvalid = draft;
   await assert.rejects(drafts.saveDraft(draft._id, { name: 'Geçersiz', form: { ...draft.form, questions: draft.form.questions.map(q => q.type === 'singleChoice' ? { ...q, options: ['Tek'] } : q) }, revision: draft.revision }), error => error.status === 422);
   assert.deepEqual(await drafts.getDraft(draft._id), beforeInvalid);
   for (let i = 0; i < 12; i++) draft = await drafts.saveDraft(draft._id, { name: `Sürüm testi ${i}`, form: draft.form, revision: draft.revision });
+  assert.deepEqual((await drafts.listDrafts()).items.map(item => String(item._id)), listed, 'Sürüm güncellemesi taslak kartlarının sırasını değiştirmemeli.');
   const first = await drafts.listVersions(draft._id), second = await drafts.listVersions(draft._id, { page: '2' });
   assert.equal(first.items.length, 12); assert.equal(second.items.length, 4);
   assert.deepEqual([...first.items, ...second.items].map(item => item.revision), Array.from({ length: 16 }, (_, index) => 15 - index));

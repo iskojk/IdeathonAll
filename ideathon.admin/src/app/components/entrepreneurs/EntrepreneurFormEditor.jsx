@@ -8,6 +8,7 @@ import { entrepreneurAdminAPI, entrepreneurError } from '@/utils/api/entrepreneu
 import EntrepreneurQuestionEditor, { answerFormats, questionFormat, withFormat } from './EntrepreneurQuestionEditor';
 import EntrepreneurSectionList from './EntrepreneurSectionList';
 import EntrepreneurQuestionList from './EntrepreneurQuestionList';
+import EntrepreneurDraftVersions from './EntrepreneurDraftVersions';
 import { formatDate } from './format';
 
 const neutralButton = { color: '#526174', borderColor: '#dbe2ea', bgcolor: 'transparent', '&:hover': { color: '#526174', bgcolor: '#f3f6f9', borderColor: '#a8b4c3' } };
@@ -257,17 +258,20 @@ export default function EntrepreneurFormEditor() {
     catch (err) { setHistoryError(await entrepreneurError(err, 'Sürümler yüklenemedi.')); }
     finally { setBusy(''); }
   }
-  async function loadVersion(revision) {
+  async function loadVersion(revision, draftId = selectedDraft?._id, fromLibrary = false) {
     if (dirty && !window.confirm('Kaydedilmemiş değişiklikler bırakılıp seçilen sürüm düzenlemeye alınsın mı?')) return;
-    setBusy('version'); setHistoryError('');
+    setBusy('version'); setHistoryError(''); setLibraryError('');
     try {
-      const { draft, version } = await entrepreneurAdminAPI.formDraftVersion(selectedDraft._id, revision);
+      const { draft, version } = await entrepreneurAdminAPI.formDraftVersion(draftId, revision);
       adoptDraft(draft); setForm(copy(version.form)); setDraftName(version.name);
       setSourceRevision(version.revision);
       setActiveSection(version.form.sections.find(s => s.id !== version.form.questions.find(q => q.id === 'kvkk_ack').section)?.id || '');
-      setExpanded(null); setHistoryOpen(false); setError('');
+      setExpanded(null); setHistoryOpen(false); setLibraryOpen(false); setError('');
       setNotice(`Sürüm ${version.revision + 1} düzenlemeye alındı. Formu Kaydet ile yeni sürüm veya ayrı taslak olarak saklayabilirsiniz.`);
-    } catch (err) { setHistoryError(await entrepreneurError(err, 'Sürüm açılamadı.')); }
+    } catch (err) {
+      const message = await entrepreneurError(err, 'Sürüm açılamadı.');
+      if (fromLibrary) setLibraryError(message); else setHistoryError(message);
+    }
     finally { setBusy(''); }
   }
   async function showDrafts(page = 1, view = 'active') {
@@ -404,7 +408,7 @@ export default function EntrepreneurFormEditor() {
       <DialogTitle id="draft-library-title">
         <Stack direction={{ xs: 'column', sm: 'row' }} gap={1.5} justifyContent="space-between" alignItems={{ sm: 'center' }}>
           <Typography component="span" variant="h6">Taslaklarım</Typography>
-          <Button variant="outlined" sx={{ ...copyButton, alignSelf: { xs: 'flex-start', sm: 'auto' } }} startIcon={<IconPlus size={18} />} disabled={!!busy} onClick={startBlank} aria-label="Taslaklarım’dan yeni taslak oluştur">Yeni Taslak</Button>
+          <IconButton sx={{ ...copyButton, border: 1, width: 40, height: 40, borderRadius: 1, alignSelf: { xs: 'flex-start', sm: 'auto' } }} disabled={!!busy} onClick={startBlank} title="Yeni Taslak" aria-label="Taslaklarım’dan yeni taslak oluştur"><IconPlus size={22} /></IconButton>
         </Stack>
       </DialogTitle>
       <DialogContent>
@@ -414,7 +418,7 @@ export default function EntrepreneurFormEditor() {
         </Tabs>
         {libraryError && <Alert severity="error" sx={{ mb: 2 }} action={<Button disabled={!!busy} onClick={() => showDrafts(library?.pagination.page || 1, libraryView)}>Tekrar dene</Button>}>{libraryError}</Alert>}
         {busy === 'list' ? <Box py={4} textAlign="center"><CircularProgress aria-label="Taslaklar yükleniyor" /></Box> : <Stack spacing={2}>
-          {library?.items.map(draft => <Box key={draft._id} sx={{ border: 1, borderColor: draft._id === selectedDraft?._id ? 'primary.main' : 'divider', borderRadius: 1, p: 2 }}>
+          {library?.items.map(draft => <Box key={draft._id} data-draft-card={draft._id} sx={{ border: 1, borderColor: draft._id === selectedDraft?._id ? 'primary.main' : 'divider', borderRadius: 1, p: 2 }}>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="space-between" alignItems={{ sm: 'center' }}>
               <Box sx={{ minWidth: 0, overflowWrap: 'anywhere' }}><Stack direction="row" gap={1} alignItems="center" flexWrap="wrap"><Typography fontWeight={600}>{draft.name}</Typography>{draft._id === selectedDraft?._id && <Chip size="small" label="Açık taslak" color="primary" variant="outlined" />}{isPublishedDraft(draft) && <Chip size="small" color="success" variant="outlined" label={`Yayında · Sürüm ${publication.draftRevision + 1}`} />}</Stack><Typography variant="body2" color="text.secondary">{draft.title} · {draft.questionCount} soru · Sürüm {draft.revision + 1}</Typography><Typography variant="caption" color="text.secondary">Oluşturulma: {formatDate(draft.createdAt)} · Son kayıt: {formatDate(draft.updatedAt)}</Typography></Box>
               {libraryView === 'deleted'
@@ -424,6 +428,7 @@ export default function EntrepreneurFormEditor() {
                   <IconButton color="error" disabled={!!busy} title="Taslağı sil" aria-label={`${draft.name} taslağını sil`} onClick={() => { setDeleteError(''); setDeleteConfirm({ draft, fromLibrary: true }); }}><IconTrash size={20} /></IconButton>
                 </Stack>}
             </Stack>
+            {libraryView === 'active' && <EntrepreneurDraftVersions draft={draft} publication={publication} busy={!!busy} onOpen={loadVersion} />}
           </Box>)}
           {library && !library.items.length && <Typography>{libraryView === 'deleted' ? 'Silinen form bulunmuyor.' : 'Bu sayfada kayıtlı taslak yok.'}</Typography>}
           {library?.pagination.pages > 1 && <Pagination count={library.pagination.pages} page={library.pagination.page} disabled={!!busy} onChange={(_, page) => showDrafts(page, libraryView)} />}
@@ -432,15 +437,16 @@ export default function EntrepreneurFormEditor() {
       <DialogActions><Button disabled={!!busy} onClick={() => setLibraryOpen(false)}>Kapat</Button></DialogActions>
     </Dialog>
     <Dialog open={!!deleteConfirm} onClose={() => { if (!busy) setDeleteConfirm(null); }} fullWidth maxWidth="sm" aria-labelledby="delete-form-title">
-      <DialogTitle id="delete-form-title">Form silinsin mi?</DialogTitle>
+      <DialogTitle id="delete-form-title">{deleteConfirm?.draft ? 'Taslak tüm sürümleriyle silinsin mi?' : 'Form silinsin mi?'}</DialogTitle>
       <DialogContent>
-        <Typography fontWeight={600} mb={1}>{(deleteConfirm?.fromLibrary ? deleteConfirm.draft.name : draftName.trim()) || 'Yeni taslak'}</Typography>
-        <Typography color="text.secondary">{deleteConfirm?.draft ? 'Form taslak listenizden kaldırılacak. Son kaydedilen içeriği ve sürüm geçmişini Taslaklarım → Silinenler bölümünden geri alabilirsiniz.' : 'Bu form henüz kaydedilmedi. Eklediğiniz bölümler ve sorular bırakılacak, taslak seçim ekranına döneceksiniz.'}</Typography>
+        <Typography fontWeight={600} mb={1}>{deleteConfirm?.draft?.name || draftName.trim() || 'Yeni taslak'}</Typography>
+        {deleteConfirm?.draft && !deleteConfirm.fromLibrary && sourceRevision !== selectedDraft?.revision && <Typography color="text.secondary" mb={1}>Şu anda bu taslağın Sürüm {sourceRevision + 1} kaydını düzenliyorsunuz.</Typography>}
+        <Typography color="text.secondary">{deleteConfirm?.draft ? 'Taslak kartı, güncel sürümü ve tüm geçmiş sürümleriyle birlikte Silinenler’e taşınacak. Taslaklarım → Silinenler bölümünden tamamını geri alabilirsiniz.' : 'Bu form henüz kaydedilmedi. Eklediğiniz bölümler ve sorular bırakılacak, taslak seçim ekranına döneceksiniz.'}</Typography>
         {deleteConfirm?.draft && dirty && (!deleteConfirm.fromLibrary || deleteConfirm.draft._id === selectedDraft?._id) && <Typography color="text.secondary" mt={1}>Kaydedilmemiş değişiklikler saklanmayacak.</Typography>}
         {deleteConfirm?.draft && <Typography fontSize={13} color="text.secondary" mt={2}>Yayımdaki soru seti ve mevcut başvurular etkilenmez.</Typography>}
         {deleteError && <Alert severity="error" sx={{ mt: 2 }}>{deleteError}</Alert>}
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}><Button disabled={!!busy} sx={neutralButton} onClick={() => setDeleteConfirm(null)}>{deleteConfirm?.fromLibrary ? 'Vazgeç' : 'Düzenlemeye Devam Et'}</Button><Button variant="contained" color="error" disabled={!!busy} onClick={deleteForm}>{busy === 'delete' ? 'Siliniyor…' : 'Formu Sil'}</Button></DialogActions>
+      <DialogActions sx={{ px: 3, pb: 2 }}><Button disabled={!!busy} sx={neutralButton} onClick={() => setDeleteConfirm(null)}>{deleteConfirm?.fromLibrary ? 'Vazgeç' : 'Düzenlemeye Devam Et'}</Button><Button variant="contained" color="error" disabled={!!busy} onClick={deleteForm}>{busy === 'delete' ? 'Siliniyor…' : deleteConfirm?.draft ? 'Tüm Taslağı Sil' : 'Formu Sil'}</Button></DialogActions>
     </Dialog>
     {!form && <Box sx={{ py: { xs: 6, md: 10 }, textAlign: 'center', color: 'text.secondary' }}>
       <IconFolders size={40} stroke={1.4} color="#8c9caf" />
@@ -506,7 +512,7 @@ export default function EntrepreneurFormEditor() {
           <Button size="small" sx={neutralButton} startIcon={<IconHistory size={15} />} disabled={!!busy || !selectedDraft} onClick={() => showHistory()}>Sürüm Geçmişi</Button>
           <Button size="small" sx={neutralButton} startIcon={<IconDownload size={15} />} disabled={!!busy} onClick={download}>Taslağı indir</Button>
           <Button size="small" sx={neutralButton} startIcon={<IconRefresh size={15} />} disabled={!!busy} onClick={reload}>Güncel taslağı yükle</Button>
-          <Button size="small" color="error" sx={{ bgcolor: 'transparent', '&:hover': { color: 'error.dark', bgcolor: '#fff0f0' } }} startIcon={<IconTrash size={15} />} disabled={!!busy} onClick={() => { setDeleteError(''); setDeleteConfirm({ draft: selectedDraft, fromLibrary: false }); }}>Formu Sil</Button>
+          <Button size="small" color="error" sx={{ bgcolor: 'transparent', '&:hover': { color: 'error.dark', bgcolor: '#fff0f0' } }} startIcon={<IconTrash size={15} />} disabled={!!busy} onClick={() => { setDeleteError(''); setDeleteConfirm({ draft: selectedDraft, fromLibrary: false }); }}>{selectedDraft ? 'Tüm Taslağı Sil' : 'Formu Sil'}</Button>
         </Stack>
       </Stack>
     </Paper>
